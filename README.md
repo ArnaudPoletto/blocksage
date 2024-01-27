@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="generated/icon.webp" width="40%" style="border-radius: 50%;">
+  <img src="generated/icon.webp" width="30%" style="border-radius: 50%;">
 </p>
 
 <h1 align="center">
