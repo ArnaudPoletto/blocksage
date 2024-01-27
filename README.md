@@ -2,7 +2,9 @@
   <img src="generated/icon_round.png" width="30%">
 </p>
 
-# **BlockSage** - Unleashing Creativity in Minecraft
+<h1 align="center">
+    BlockSage – Unleashing Creativity in Minecraft
+</h1>
 
 Welcome to BlockSage: an innovative AI assistant designed for the vibrant world of Minecraft! 
 
