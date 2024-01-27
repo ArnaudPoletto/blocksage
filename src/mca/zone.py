@@ -14,6 +14,7 @@ from src.utils.block_dictionary import (
 )
 
 AIR_NAME = "air"
+BLACK_COLOR = [0, 0, 0]
 
 
 class Zone:
@@ -37,17 +38,8 @@ class Zone:
         """
         return np.prod(self.data.shape)
 
-    def get_data(self) -> np.ndarray:
-        """
-        Returns the data of the zone.
-
-        Returns:
-            np.ndarray: The data of the zone.
-        """
-        return self.data
-
     @abstractmethod
-    def _get_data_for_display(self) -> np.ndarray:
+    def get_data_for_display(self) -> np.ndarray:
         """
         Returns the data of the zone with the view applied, for display purposes.
         """
@@ -60,7 +52,7 @@ class Zone:
         Display a region of blocks.
 
         Args:
-            region (np.ndarray): Region of blocks, either of shape (chunk_x, chunk_z, section, section_y, section_z, section_x) = (32, 32, 24, 16, 16, 16) or (region_x, region_y, region_z) = (512, 384, 512)
+            region (np.ndarray): Region of blocks, either of shape (chunk_x, chunk_z, section, section_x, section * section_y, section_z)
             block_id_dict (dict, optional): Dictionary mapping block names to block ids. Defaults to None.
             block_color_dict (dict, optional): Dictionary mapping block names to rgb values. Defaults to None.
         """
@@ -71,7 +63,7 @@ class Zone:
             block_color_dict = get_block_color_dictionary()
 
         # Apply view if specified
-        zone = self._get_data_for_display()
+        zone = self.get_data_for_display()
 
         # Get dictionaries
         id_color_dict = {
@@ -91,13 +83,13 @@ class Zone:
         ]
 
         # Get the rgb values for the first non-air blocks
-        first_non_air_r = np.vectorize(lambda x: id_color_dict.get(x)[0])(
+        first_non_air_r = np.vectorize(lambda x: id_color_dict.get(x, BLACK_COLOR)[0])(
             first_non_air_blocks
         )
-        first_non_air_g = np.vectorize(lambda x: id_color_dict.get(x)[1])(
+        first_non_air_g = np.vectorize(lambda x: id_color_dict.get(x, BLACK_COLOR)[1])(
             first_non_air_blocks
         )
-        first_non_air_b = np.vectorize(lambda x: id_color_dict.get(x)[2])(
+        first_non_air_b = np.vectorize(lambda x: id_color_dict.get(x, BLACK_COLOR)[2])(
             first_non_air_blocks
         )
 

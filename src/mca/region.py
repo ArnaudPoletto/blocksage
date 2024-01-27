@@ -7,6 +7,7 @@ sys.path.append(str(GLOBAL_DIR))
 import numpy as np
 
 from src.mca.zone import Zone
+from src.mca.chunk import Chunk
 
 class Region(Zone):
     """A region as a collection of blocks of shape (region_x, region_z, section, section_y, section_z, section_x)."""
@@ -27,10 +28,28 @@ class Region(Zone):
 
         super().__init__(data)
 
-    def _get_data_for_display(self):
-        return self.view_by_region()
+    def get_data_for_display(self) -> np.ndarray:
+        return self.get_data_by_region()
+
+    def get_chunk(self, x: int, z: int) -> Chunk:
+        """
+        Returns a chunk of blocks.
+
+        Args:
+            x (int): The x coordinate of the chunk.
+            z (int): The z coordinate of the chunk.
+
+        Returns:
+            np.ndarray: The chunk of blocks.
+        """
+        if x < 0 or x >= self.data.shape[0]:
+            raise ValueError(f"❌ x must be in [0, {self.data.shape[0]}), not {x}.")
+        if z < 0 or z >= self.data.shape[1]:
+            raise ValueError(f"❌ z must be in [0, {self.data.shape[1]}), not {z}.")
+        
+        return Chunk(self, x, z)
     
-    def view_by_section(self):
+    def get_data_by_section(self) -> np.ndarray:
         """
         View the blocks by section, i.e. as an array of shape (region_x, region_z, section, section_x, section_y, section_z).
 
@@ -43,7 +62,7 @@ class Region(Zone):
         return self.data.transpose((0, 1, 2, 5, 3, 4))
 
 
-    def view_by_chunk(self):
+    def get_data_by_chunk(self) -> np.ndarray:
         """
         View the blocks by chunk, i.e. as an array of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
 
@@ -60,7 +79,7 @@ class Region(Zone):
             .transpose((0, 1, 4, 2, 3))
 
 
-    def view_by_region(self):
+    def get_data_by_region(self) -> np.ndarray:
         """
         View the blocks by region, i.e. as an array of shape (region_x, region_y, region_z) = (region_x * section_x, section * section_y, region_z * section_z).
 
