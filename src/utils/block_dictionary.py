@@ -20,7 +20,6 @@ def save_block_id_dictionary() -> None:
     """
     Get a dictionary of block states and their corresponding index.
     """
-
     # Get list of json files in block states folder
     block_files = [f.replace(".json", "") for f in os.listdir(BLOCK_STATES_PATH)]
     block_dict = {block_files[i]: i for i in range(len(block_files))}
@@ -40,7 +39,6 @@ def get_block_id_dictionary() -> dict:
     Returns:
         dict: Dictionary of block states and their corresponding index, e.g. {'minecraft:air': 0, 'minecraft:stone': 1, ...}
     """
-
     with open(BLOCK_DICT_PATH) as f:
         block_dict = json.load(f)
 
@@ -58,7 +56,6 @@ def get_block_color_dictionary() -> dict:
     Returns:
         dict: Dictionary of block states and their corresponding color, e.g. {'minecraft:air': [0, 0, 0], 'minecraft:stone': [0.5, 0.5, 0.5], ...}
     """
-
     with open(BLOCK_COLOR_DICT_PATH) as f:
         block_color_dict = json.load(f)
 

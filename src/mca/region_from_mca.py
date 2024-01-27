@@ -14,6 +14,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from src.utils.logs import log
 from src.utils.block_dictionary import get_block_id_dictionary
+from src.mca.region import Region
 
 N_REGIONS = 32
 OFFSET_SHIFT = 8
@@ -137,7 +138,7 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict, x: int
     return _process_chunk(nbt_data, block_dict)
 
 
-def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chunks: bool = True):
+def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chunks: bool = True) -> Region:
     """
     Get the block data of a region file.
 
@@ -147,7 +148,7 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
         parallelize_chunks (bool): Whether to parallelize chunk processing. Defaults to True.
 
     Returns:
-        np.ndarray: Array of block IDs of shape (32, 32, 24, 16, 16, 16).
+        Region: A region of blocks.
     """
     if block_id_dict is None:
         block_id_dict = get_block_id_dictionary()
@@ -158,7 +159,7 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
     locations = struct.unpack(f'>{SECTOR_BYTES // 4}I', region_data[:SECTOR_BYTES])
 
     # Process chunks
-    region_blocks = np.zeros((N_REGIONS, N_REGIONS, WORLD_HEIGHT // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
+    data = np.zeros((N_REGIONS, N_REGIONS, WORLD_HEIGHT // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
     futures = []
     bar = tqdm(total=N_REGIONS * N_REGIONS, desc='🔄 Processing chunks')
     if parallelize_chunks:
@@ -182,18 +183,18 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
             futures.append((executor.submit(_read_and_process_chunk, chunk_data_stream, block_id_dict, x, y)))
         else:
             chunk_blocks = _read_and_process_chunk(chunk_data_stream, block_id_dict)
-            region_blocks[x, y] = chunk_blocks
+            data[x, y] = chunk_blocks
             bar.update(1)
 
     # Wait for all chunks to finish processing if parallelized
     for future in as_completed(futures):
         try:
             chunk_blocks, x, y = future.result()
-            region_blocks[x, y] = chunk_blocks
+            data[x, y] = chunk_blocks
             bar.update(1)
         except Exception as e:
             log(f"❌ Error while processing chunk: {e}")
 
     bar.close()
 
-    return region_blocks
+    return Region(data)
