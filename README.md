@@ -6,7 +6,6 @@
 <bold>BlockSage</bold> - Unleashing Creativity in the World of Minecraft
 </h1>
 
-<p align="justify">
 Welcome to BlockSage: an innovative AI assistant designed for the vibrant world of Minecraft! 
 
 Building your dream worlds in Minecraft block by block can be a slow and meticulour process. Many builders are needed to complete a project, and even then, it can take months to complete. BlockSage is here to help! 
@@ -18,4 +17,3 @@ In its current development phase, BlockSage is focusing on generating simple, Mi
 Future updates will include features like suggesting improvements to existing structures, helping to complete unfinished projects, and providing creative solutions to common building challenges. Our aim is to give you the tools to build at a broader scale, simplifying the process while also allowing for more creativity and personal expression.
 
 Stay tuned as we continue to develop BlockSage. We're excited to bring this new level of creativity and efficiency to your Minecraft experience. Building big doesn't have to be a big hassle anymore. With BlockSage, the future of Minecraft building is looking brighter and more imaginative than ever! 🌍✨
-</p>
