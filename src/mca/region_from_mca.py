@@ -11,6 +11,7 @@ from io import BytesIO
 from nbtlib import File
 from nbtlib.tag import LongArray
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from line_profiler import profile
 
 from src.utils.logs import log
 from src.utils.block_dictionary import get_block_id_dictionary
@@ -24,40 +25,38 @@ CHUNK_HEADER_SIZE = 5
 ZLIB_COMPRESSION_TYPE = 2
 SECTOR_COUNT_MASK = 0xFF
 
+TOTAL_SECTION_BLOCKS = SECTION_SIZE * SECTION_SIZE * SECTION_SIZE
 
-def _process_section(data: LongArray, bit_length: int) -> np.ndarray:
+
+def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
     """
-    Process a section of blocks, i.e. a 16x16x16 cube of blocks.
+    Process a section of blocks for any bit length, using vectorized operations.
 
     Args:
-        data (LongArray): LongArray containing the block indices.
+        data (np.ndarray): LongArray containing the block indices.
         bit_length (int): Number of bits per block index.
 
     Returns:
-        np.ndarray: Array of block indices of shape (16, 16, 16).
+        np.ndarray: Array of block indices.
     """
+    if bit_length <= 0 or bit_length > 64:
+        raise ValueError(f"Invalid bit length: {bit_length}.")
 
-    total_blocks = SECTION_SIZE * SECTION_SIZE * SECTION_SIZE
-    block_indices = np.zeros(total_blocks, dtype=np.uint16) # 16-bit unsigned integers are enough for block indices
+    indices_per_long = 64 // bit_length
 
-    bit_mask = (1 << bit_length) - 1
-    bit_offset = 0
-    long_index = 0
-    start_offset = 0
-    for block_idx in range(total_blocks):
-        block_indices[block_idx] = (data[long_index] >> start_offset) & bit_mask
+    # Create an array of shift values with the correct bit_length
+    shifts = np.arange(indices_per_long, dtype=np.uint64) * bit_length
 
-        # Since 1.16, block indices do not span multiple longs
-        if start_offset + bit_length + bit_length > BITS_PER_LONG:
-            remaining_bits = (start_offset + bit_length) - BITS_PER_LONG
-            bit_offset += remaining_bits
-            long_index += 1
-            start_offset = 0
-        else:
-            bit_offset += bit_length
-            start_offset += bit_length
+    # Reshape data to align with indices_per_long
+    data_reshaped = data.repeat(indices_per_long).reshape(data.shape[0], -1)
 
-    return block_indices
+    # Create an array of bit masks
+    mask = (1 << bit_length) - 1
+
+    # Apply the masks and shifts
+    masked_data = (data_reshaped >> shifts) & mask
+
+    return masked_data.flatten()[:TOTAL_SECTION_BLOCKS] # Flatten and trim to the correct size (last long may be incomplete)
 
 
 def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
@@ -90,9 +89,9 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
         if section_data is None:
             section_block_indices = np.zeros((SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
         else:
-            section_data = LongArray(section_data)
             bit_length = max(4, int(np.ceil(np.log2(len(section_palette)))))  # At least 4 bits, or log2 of palette size
-            section_block_indices = _process_section(section_data, bit_length)
+            section_data = np.asarray(section_data, dtype=np.uint64)
+            section_block_indices = process_section(section_data, bit_length)
 
         # Convert block indices to block IDs
         section_blocks = np.vectorize(block_dict.get)(section_palette[section_block_indices])
@@ -137,7 +136,8 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.
     return _process_chunk(nbt_data, block_dict)
 
 
-def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chunks: bool = True) -> Region:
+@profile
+def get_region(file_path: str, block_id_dict: dict = None, parallelize_chunks: bool = True) -> Region:
     """
     Get the block data of a region file.
 
@@ -160,12 +160,12 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
     # Process chunks
     data = np.zeros((N_CHUNKS_PER_REGION_PER_DIM, N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16) - 1 # -1 for missing sections
     futures = []
-    bar = tqdm(total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM, desc='🔄 Processing chunks')
     if parallelize_chunks:
         executor = ProcessPoolExecutor()
 
     region_x_world = None
     region_z_world = None
+    bar = tqdm(total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM, desc='🔄 Processing chunks')
     for chunk_idx in range(N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM):
         if locations[chunk_idx] == 0:
             bar.update(1)

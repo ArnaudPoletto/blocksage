@@ -9,13 +9,13 @@ import numpy as np
 
 
 class Section(Zone):
-    """A section of a chunk. There are 24 chunks in a region."""
+    """A section of a chunk. There are 24 sections in a chunk."""
 
     SECTION_SIZE = 16
 
     def __init__(self, chunk, y: int) -> None:
         """
-        Initialize a region.
+        Initialize a section.
 
         Args:
             chunk (Chunl): The chunk the section belongs to.
@@ -24,16 +24,13 @@ class Section(Zone):
         if y < 0 or y >= chunk.data.shape[1]:
             raise ValueError(f"❌ y must be in [0, {chunk.data.shape[1]}), not {y}.")
 
-        super().__init__(chunk.data[y])
+        super().__init__(chunk.data[y], chunk.x_world, chunk.z_world)
         self.chunk = chunk
         self.y = y
 
     def get_data_by_section(self) -> np.ndarray:
         """
         View the blocks by section, i.e. as an array of shape (section_x, section_y, section_z).
-
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (section_y, section_z, section_x).
 
         Returns:
             np.ndarray: Array of block IDs of shape (section_x, section_y, section_z).

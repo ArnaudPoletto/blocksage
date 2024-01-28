@@ -55,9 +55,6 @@ class Region(Zone):
         """
         View the blocks by section, i.e. as an array of shape (region_x, region_z, section, section_x, section_y, section_z).
 
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (region_x, region_z, section, section_y, section_z, section_x).
-
         Returns:
             np.ndarray: Array of block IDs of shape (region_x, region_z, section, section_x, section_y, section_z).
         """
@@ -67,9 +64,6 @@ class Region(Zone):
     def get_data_by_chunk(self) -> np.ndarray:
         """
         View the blocks by chunk, i.e. as an array of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
-
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (region_x, region_z, section, section_y, section_z, section_x).
 
         Returns:
             np.ndarray: Array of block IDs of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
@@ -84,9 +78,6 @@ class Region(Zone):
     def get_data_by_region(self) -> np.ndarray:
         """
         View the blocks by region, i.e. as an array of shape (region_x, region_y, region_z) = (region_x * section_x, section * section_y, region_z * section_z).
-
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (region_x, region_z, section, section_y, section_z, section_x).
 
         Returns:
             np.ndarray: Array of block IDs of shape (region_x, region_y, region_z) = (region_x * section_x, section * section_y, region_z * section_z).

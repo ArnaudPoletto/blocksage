@@ -105,7 +105,6 @@ class Zone:
         plt.title("Map of first non-air blocks in each xz slice")
         plt.xlabel("x")
         plt.ylabel("z")
-        print(self.x_world, self.z_world)
         plt.xticks(np.arange(zone.shape[0], step=16), np.arange(self.x_world, self.x_world + zone.shape[0], 16), rotation=90)
         plt.yticks(np.arange(zone.shape[2], step=16), np.arange(self.z_world, self.z_world + zone.shape[2], 16), rotation=0)
         plt.tight_layout()

@@ -28,7 +28,9 @@ class Chunk(Zone):
         if z < 0 or z >= region.data.shape[1]:
             raise ValueError(f"❌ z must be in [0, {region.data.shape[1]}), not {z}.")
 
-        super().__init__(region.data[x, z])
+        x_world = region.x_world + CHUNK_XZ_SIZE * x
+        z_world = region.z_world + CHUNK_XZ_SIZE * z 
+        super().__init__(region.data[x, z], x_world, z_world)
         self.region = region
         self.x = x
         self.z = z
@@ -52,9 +54,6 @@ class Chunk(Zone):
         """
         View the blocks by section, i.e. as an array of shape (section, section_x, section_y, section_z).
 
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (section, section_y, section_z, section_x).
-
         Returns:
             np.ndarray: Array of block IDs of shape (section, section_x, section_y, section_z).
         """
@@ -64,9 +63,6 @@ class Chunk(Zone):
     def get_data_by_chunk(self) -> np.ndarray:
         """
         View the blocks by chunk, i.e. as an array of shape (chunk_x, chunk_y, chunk_z) = (section_x, section * section_y, section_z).
-
-        Args:
-            region_blocks (np.ndarray): Array of block IDs of shape (z, section, section_y, section_z, section_x).
 
         Returns:
             np.ndarray: Array of block IDs of shape (chunk_x, chunk_y, chunk_z) = (section_x, section * section_y, section_z).
