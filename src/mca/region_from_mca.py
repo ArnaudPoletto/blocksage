@@ -15,19 +15,14 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from src.utils.logs import log
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.mca.region import Region
+from src.config import N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE, MIN_Y, SECTION_SIZE
 
-N_REGIONS = 32
 OFFSET_SHIFT = 8
-SECTION_SIZE = 16
 BITS_PER_LONG = 64
 SECTOR_BYTES = 4096
 CHUNK_HEADER_SIZE = 5
 ZLIB_COMPRESSION_TYPE = 2
 SECTOR_COUNT_MASK = 0xFF
-
-MIN_WORLD_HEIGHT = -64
-MAX_WORLD_HEIGHT = 320
-WORLD_HEIGHT = MAX_WORLD_HEIGHT - MIN_WORLD_HEIGHT
 
 
 def _process_section(data: LongArray, bit_length: int) -> np.ndarray:
@@ -74,14 +69,22 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
         block_dict (dict): Dictionary of block states and their corresponding index.
 
     Returns:
+        int: X coordinate of the chunk in the region.
+        int: Z coordinate of the chunk in the region.
+        int: X coordinate of the chunk in the world.
+        int: Z coordinate of the chunk in the world.
         np.ndarray: Array of block IDs of shape (24, 16, 16, 16).
     """
-    chunk_blocks = np.zeros((WORLD_HEIGHT // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
+    chunk_x_in_region = nbt_data['xPos'] % N_CHUNKS_PER_REGION_PER_DIM
+    chunk_z_in_region = nbt_data['zPos'] % N_CHUNKS_PER_REGION_PER_DIM
+    chunk_x_in_world = nbt_data['xPos'] * SECTION_SIZE
+    chunk_z_in_world = nbt_data['zPos'] * SECTION_SIZE
+    chunk_blocks = np.zeros((CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
 
     for section in nbt_data['sections']:
         section_palette = np.asarray([block['Name'].replace('minecraft:', '') for block in section['block_states']['palette']])
         section_data = section['block_states'].get('data')
-        y = int(section['Y']) - MIN_WORLD_HEIGHT // SECTION_SIZE
+        y = int(section['Y']) - MIN_Y // SECTION_SIZE
 
         # If there is no data array, all blocks are the same: the first block in the palette
         if section_data is None:
@@ -97,23 +100,23 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
         # Add the section to the chunk
         chunk_blocks[y] = section_blocks.reshape((SECTION_SIZE, SECTION_SIZE, SECTION_SIZE))
 
-    return chunk_blocks
+    return chunk_x_in_region, chunk_z_in_region, chunk_x_in_world, chunk_z_in_world, chunk_blocks
 
 
-def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict, x: int = None, y: int = None) -> np.ndarray:
+def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.ndarray:
     """
     Read and process a chunk of blocks, i.e. a 24x16x16x16 part of the world.
 
     Args:
         chunk_data_stream (BytesIO): Stream of the chunk data.
         block_dict (dict): Dictionary of block states and their corresponding index.
-        x (int): X coordinate of the chunk. Defaults to None.
-        y (int): Y coordinate of the chunk. Defaults to None.
 
     Returns:
+        int: X coordinate of the chunk in the region.
+        int: Z coordinate of the chunk in the region.
+        int: X coordinate of the chunk in the world.
+        int: Z coordinate of the chunk in the world.
         np.ndarray: Array of block IDs of shape (24, 16, 16, 16).
-        x (int): X coordinate of the chunk. Not returned if x or y is None.
-        y (int): Y coordinate of the chunk. Not returned if x or y is None.
     """
 
     # Seek the chunk from the offset and sector count
@@ -131,10 +134,6 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict, x: int
     with decompressed_data_stream:
         nbt_data = File.parse(decompressed_data_stream)
 
-    chunk_blocks = _process_chunk(nbt_data, block_dict)
-    if x is not None and y is not None:
-        return chunk_blocks, x, y
-    
     return _process_chunk(nbt_data, block_dict)
 
 
@@ -159,16 +158,15 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
     locations = struct.unpack(f'>{SECTOR_BYTES // 4}I', region_data[:SECTOR_BYTES])
 
     # Process chunks
-    data = np.zeros((N_REGIONS, N_REGIONS, WORLD_HEIGHT // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16)
+    data = np.zeros((N_CHUNKS_PER_REGION_PER_DIM, N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE), dtype=np.uint16) - 1 # -1 for missing sections
     futures = []
-    bar = tqdm(total=N_REGIONS * N_REGIONS, desc='🔄 Processing chunks')
+    bar = tqdm(total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM, desc='🔄 Processing chunks')
     if parallelize_chunks:
         executor = ProcessPoolExecutor()
 
-    for chunk_idx in range(N_REGIONS * N_REGIONS):
-        x = chunk_idx % N_REGIONS
-        y = chunk_idx // N_REGIONS
-
+    region_x_world = None
+    region_z_world = None
+    for chunk_idx in range(N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM):
         if locations[chunk_idx] == 0:
             bar.update(1)
             continue
@@ -180,21 +178,29 @@ def get_region_data(file_path: str, block_id_dict: dict = None, parallelize_chun
 
         # Process the chunk, either in parallel or sequentially
         if parallelize_chunks:
-            futures.append((executor.submit(_read_and_process_chunk, chunk_data_stream, block_id_dict, x, y)))
+            futures.append((executor.submit(_read_and_process_chunk, chunk_data_stream, block_id_dict)))
         else:
-            chunk_blocks = _read_and_process_chunk(chunk_data_stream, block_id_dict)
-            data[x, y] = chunk_blocks
+            chunk_x_region, chunk_z_region, chunk_x_world, chunk_z_world, chunk_blocks = _read_and_process_chunk(chunk_data_stream, block_id_dict)
+            data[chunk_x_region, chunk_z_region] = chunk_blocks
             bar.update(1)
+
+            if chunk_x_region == 0 and chunk_z_region == 0:
+                region_x_world = chunk_x_world
+                region_z_world = chunk_z_world
 
     # Wait for all chunks to finish processing if parallelized
     for future in as_completed(futures):
         try:
-            chunk_blocks, x, y = future.result()
-            data[x, y] = chunk_blocks
+            chunk_x_region, chunk_z_region, chunk_x_world, chunk_z_world, chunk_blocks = future.result()
+            data[chunk_x_region, chunk_z_region] = chunk_blocks
             bar.update(1)
+
+            if chunk_x_region == 0 and chunk_z_region == 0:
+                region_x_world = chunk_x_world
+                region_z_world = chunk_z_world
         except Exception as e:
             log(f"❌ Error while processing chunk: {e}")
 
     bar.close()
 
-    return Region(data)
+    return Region(data, region_x_world, region_z_world)

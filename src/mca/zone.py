@@ -8,10 +8,8 @@ import numpy as np
 from abc import abstractmethod
 import matplotlib.pyplot as plt
 
-from src.utils.block_dictionary import (
-    get_block_id_dictionary,
-    get_block_color_dictionary,
-)
+from src.utils.block_dictionary import get_block_id_dictionary, get_block_color_dictionary
+from src.config import CHUNK_XZ_SIZE
 
 AIR_NAME = "air"
 BLACK_COLOR = [0, 0, 0]
@@ -20,14 +18,18 @@ BLACK_COLOR = [0, 0, 0]
 class Zone:
     """A zone as a collection of blocks."""
 
-    def __init__(self, data: np.ndarray) -> None:
+    def __init__(self, data: np.ndarray, x_world: int, z_world: int) -> None:
         """
         Initialize a zone.
 
         Args:
             data (np.ndarray): The array containing the block indices.
+            x_world (int): The x coordinate of the zone in the world.
+            z_world (int): The z coordinate of the zone in the world.
         """
         self.data = data
+        self.x_world = x_world
+        self.z_world = z_world
 
     def get_number_of_blocks(self) -> int:
         """
@@ -99,7 +101,12 @@ class Zone:
 
         # Display the rgb values
         plt.figure(figsize=(10, 10))
-        plt.imshow(first_non_air_rgb[::-1, :, :], origin="lower")
+        plt.imshow(first_non_air_rgb.transpose(1, 0, 2), origin="lower")
         plt.title("Map of first non-air blocks in each xz slice")
+        plt.xlabel("x")
+        plt.ylabel("z")
+        print(self.x_world, self.z_world)
+        plt.xticks(np.arange(zone.shape[0], step=16), np.arange(self.x_world, self.x_world + zone.shape[0], 16), rotation=90)
+        plt.yticks(np.arange(zone.shape[2], step=16), np.arange(self.z_world, self.z_world + zone.shape[2], 16), rotation=0)
         plt.tight_layout()
         plt.show()

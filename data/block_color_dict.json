@@ -1,4 +1,7 @@
 {
+    "air": [173, 216, 230],
+    "cave_air": [230, 187, 173],
+    "void_air": [0, 0, 0],
     "acacia_button": [185, 91, 49],
     "acacia_door": [167, 91, 51],
     "acacia_fence": [185, 91, 49],

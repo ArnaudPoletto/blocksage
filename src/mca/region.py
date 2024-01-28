@@ -14,19 +14,21 @@ class Region(Zone):
 
     SHAPE_SIZE = 6
 
-    def __init__(self, data: np.ndarray) -> None:
+    def __init__(self, data: np.ndarray, x_world: int, z_world: int) -> None:
         """
         Initialize a region.
 
         Args:
             data (np.ndarray): The array containing the block indices.
+            x_world (int): The x coordinate of the region in the world.
+            z_world (int): The z coordinate of the region in the world.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
                 f"❌ region_blocks must be of shape (region_x, region_z, section, section_y, section_z, section_x), not {data.shape}."
             )
 
-        super().__init__(data)
+        super().__init__(data, x_world, z_world)
 
     def get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_region()

@@ -8,12 +8,11 @@ import numpy as np
 
 from src.mca.zone import Zone
 from src.mca.section import Section
+from src.config import CHUNK_XZ_SIZE
 
 
 class Chunk(Zone):
     """A chunk of a region. There are 32x32 chunks in a region."""
-
-    CHUNK_XZ_SIZE = 16
 
     def __init__(self, region, x: int, z: int) -> None:
         """
@@ -79,10 +78,10 @@ class Chunk(Zone):
             .transpose((2, 0, 1))
 
     def get_data_for_display(self) -> np.ndarray:
-        region_x = self.CHUNK_XZ_SIZE * self.x
-        region_z = self.CHUNK_XZ_SIZE * self.z
+        region_x = CHUNK_XZ_SIZE * self.x
+        region_z = CHUNK_XZ_SIZE * self.z
         return self.region.get_data_for_display()[
-            region_x : region_x + self.CHUNK_XZ_SIZE,
+            region_x : region_x + CHUNK_XZ_SIZE,
             :,
-            region_z : region_z + self.CHUNK_XZ_SIZE,
+            region_z : region_z + CHUNK_XZ_SIZE,
         ]
