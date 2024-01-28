@@ -11,7 +11,13 @@ from src.mca.zone import Zone
 from src.mca.chunk import Chunk
 from src.mca.cluster import Cluster
 from src.mca.section import Section
-from src.config import MIN_Y, DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM, MAX_N_SECTIONS_PER_CLUSTER_PER_DIM, DEFAULT_CLUSTER_STRIDE
+from src.config import (
+    MIN_Y,
+    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    DEFAULT_CLUSTER_STRIDE,
+)
+
 
 class Region(Zone):
     """A region as a collection of blocks of shape (region_x, region_z, section, section_y, section_z, section_x)."""
@@ -52,10 +58,16 @@ class Region(Zone):
             raise ValueError(f"❌ x must be in [0, {self.data.shape[0]}), not {x}.")
         if z < 0 or z >= self.data.shape[1]:
             raise ValueError(f"❌ z must be in [0, {self.data.shape[1]}), not {z}.")
-        
+
         return Chunk(self, x, z)
-    
-    def get_cluster(self, x: int, y: int, z: int, cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM) -> Cluster:
+
+    def get_cluster(
+        self,
+        x: int,
+        y: int,
+        z: int,
+        cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    ) -> Cluster:
         """
         Returns a cluster of blocks.
 
@@ -69,7 +81,9 @@ class Region(Zone):
             np.ndarray: The cluster of blocks.
         """
         if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}.")
+            raise ValueError(
+                f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
+            )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
         x_max = self.data.shape[0] - cluster_size + 1
@@ -81,9 +95,9 @@ class Region(Zone):
             raise ValueError(f"❌ z must be in [0, {z_max}), not {z}.")
         if y < 0 or y >= y_max:
             raise ValueError(f"❌ y must be in [0, {y_max}), not {y}.")
-        
+
         return Cluster(self, x, y, z, cluster_size)
-    
+
     def get_section(self, x: int, y: int, z: int) -> Section:
         """
         Returns a section of blocks.
@@ -119,7 +133,7 @@ class Region(Zone):
             .reshape((region_x * section_x, region_z * section_z, section * section_y))
             .transpose(0, 2, 1)
         )
-    
+
     def get_data_by_chunk(self) -> np.ndarray:
         """
         View the blocks by chunk, i.e. as an array of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
@@ -129,10 +143,10 @@ class Region(Zone):
         """
         region_x, region_z, section, section_y, section_z, section_x = self.data.shape
 
-        return self.data \
-            .reshape((region_x, region_z, section * section_y, section_z, section_x)) \
-            .transpose((0, 1, 4, 2, 3))
-    
+        return self.data.reshape(
+            (region_x, region_z, section * section_y, section_z, section_x)
+        ).transpose((0, 1, 4, 2, 3))
+
     def get_data_by_section(self) -> np.ndarray:
         """
         View the blocks by section, i.e. as an array of shape (region_x, region_z, section, section_x, section_y, section_z).
@@ -141,8 +155,14 @@ class Region(Zone):
             np.ndarray: Array of block IDs of shape (region_x, region_z, section, section_x, section_y, section_z).
         """
         return self.data.transpose((0, 1, 2, 5, 3, 4))
-    
-    def get_clusters(self, block_id_dict: dict = None, cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM, stride: int = DEFAULT_CLUSTER_STRIDE, only_relevant: bool = True) -> Generator[Cluster, None, None]:
+
+    def get_clusters(
+        self,
+        block_id_dict: dict = None,
+        cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+        stride: int = DEFAULT_CLUSTER_STRIDE,
+        only_relevant: bool = True,
+    ) -> Generator[Cluster, None, None]:
         """
         Returns a generator of clusters of blocks.
 
@@ -156,7 +176,9 @@ class Region(Zone):
             Generator[Cluster]: The clusters of blocks.
         """
         if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}.")
+            raise ValueError(
+                f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
+            )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
         if stride < 1 or stride > cluster_size:

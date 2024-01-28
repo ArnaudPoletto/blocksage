@@ -9,14 +9,28 @@ from abc import abstractmethod
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
-from src.utils.block_dictionary import get_block_id_dictionary, get_block_color_dictionary
-from src.config import MIN_Y, MAX_Y, CHUNK_XZ_SIZE, SECTION_SIZE, AIR_NAME, CAVE_AIR_NAME, VOID_AIR_NAME, BLACK_COLOR
+from src.utils.block_dictionary import (
+    get_block_id_dictionary,
+    get_block_color_dictionary,
+)
+from src.config import (
+    MIN_Y,
+    MAX_Y,
+    CHUNK_XZ_SIZE,
+    SECTION_SIZE,
+    AIR_NAME,
+    CAVE_AIR_NAME,
+    VOID_AIR_NAME,
+    BLACK_COLOR,
+)
 
 
 class Zone:
     """A zone as a collection of blocks."""
 
-    def __init__(self, data: np.ndarray, x_world: int, y_world: int, z_world: int) -> None:
+    def __init__(
+        self, data: np.ndarray, x_world: int, y_world: int, z_world: int
+    ) -> None:
         """
         Initialize a zone.
 
@@ -38,7 +52,7 @@ class Zone:
             int: The number of blocks in the zone.
         """
         return np.prod(self.data.shape)
-    
+
     def get_world_coordinates(self) -> tuple:
         """
         Returns the world coordinates of the zone.
@@ -56,13 +70,20 @@ class Zone:
         pass
 
     @staticmethod
-    def _get_first_non_air_rgb(zone: np.ndarray, block_id_dict: dict, id_color_dict: dict) -> np.ndarray:
+    def _get_first_non_air_rgb(
+        zone: np.ndarray, block_id_dict: dict, id_color_dict: dict
+    ) -> np.ndarray:
         air_block_id = block_id_dict[AIR_NAME]
         cave_air_block_id = block_id_dict[CAVE_AIR_NAME]
         void_air_block_id = block_id_dict[VOID_AIR_NAME]
 
         # Get the first non-air block for each xz slice
-        non_air_mask = (zone != air_block_id) & (zone != cave_air_block_id) & (zone != void_air_block_id)
+        non_air_mask = (
+            (zone != air_block_id)
+            & (zone != cave_air_block_id)
+            & (zone != void_air_block_id)
+            & (zone != np.uint16(-1))
+        )
         first_non_air_indices = np.argmax(non_air_mask[:, ::-1, :], axis=1)
         first_non_air_blocks = zone[:, ::-1, :][
             np.arange(zone.shape[0])[:, None],
@@ -95,10 +116,9 @@ class Zone:
         self, block_id_dict: dict = None, block_color_dict: dict = None
     ) -> None:
         """
-        Display a region of blocks.
+        Display the region of blocks.
 
         Args:
-            region (np.ndarray): Region of blocks, either of shape (chunk_x, chunk_z, section, section_x, section * section_y, section_z)
             block_id_dict (dict, optional): Dictionary mapping block names to block ids. Defaults to None.
             block_color_dict (dict, optional): Dictionary mapping block names to rgb values. Defaults to None.
         """
@@ -116,15 +136,21 @@ class Zone:
 
         # XZ view
         zone_xz = self.get_data_for_display()
-        first_non_air_rgb_xz = Zone._get_first_non_air_rgb(zone_xz, block_id_dict, id_color_dict)
+        first_non_air_rgb_xz = Zone._get_first_non_air_rgb(
+            zone_xz, block_id_dict, id_color_dict
+        )
 
         # XY view
         zone_xy = self.get_data_for_display().transpose(0, 2, 1)
-        first_non_air_rgb_xy = Zone._get_first_non_air_rgb(zone_xy, block_id_dict, id_color_dict)
+        first_non_air_rgb_xy = Zone._get_first_non_air_rgb(
+            zone_xy, block_id_dict, id_color_dict
+        )
 
         # ZY view
         zone_zy = self.get_data_for_display().transpose(2, 0, 1)
-        first_non_air_rgb_zy = Zone._get_first_non_air_rgb(zone_zy, block_id_dict, id_color_dict)
+        first_non_air_rgb_zy = Zone._get_first_non_air_rgb(
+            zone_zy, block_id_dict, id_color_dict
+        )
 
         # Plot
         gs = GridSpec(1, 3)
@@ -137,9 +163,15 @@ class Zone:
         ax1.set_xlabel("x")
         ax1.set_ylabel("z")
         ax1.set_xticks(np.arange(zone_xz.shape[0], step=CHUNK_XZ_SIZE))
-        ax1.set_xticklabels(np.arange(self.x_world, self.x_world + zone_xz.shape[0], CHUNK_XZ_SIZE), rotation=90)
+        ax1.set_xticklabels(
+            np.arange(self.x_world, self.x_world + zone_xz.shape[0], CHUNK_XZ_SIZE),
+            rotation=90,
+        )
         ax1.set_yticks(np.arange(zone_xz.shape[2], step=CHUNK_XZ_SIZE))
-        ax1.set_yticklabels(np.arange(self.z_world, self.z_world + zone_xz.shape[2], CHUNK_XZ_SIZE), rotation=0)
+        ax1.set_yticklabels(
+            np.arange(self.z_world, self.z_world + zone_xz.shape[2], CHUNK_XZ_SIZE),
+            rotation=0,
+        )
 
         # Add the XY view on bottom left
         ax2 = plt.subplot(gs[0, 1])
@@ -148,9 +180,15 @@ class Zone:
         ax2.set_xlabel("x")
         ax2.set_ylabel("y")
         ax2.set_xticks(np.arange(zone_xy.shape[0], step=CHUNK_XZ_SIZE))
-        ax2.set_xticklabels(np.arange(self.x_world, self.x_world + zone_xy.shape[0], CHUNK_XZ_SIZE), rotation=90)
+        ax2.set_xticklabels(
+            np.arange(self.x_world, self.x_world + zone_xy.shape[0], CHUNK_XZ_SIZE),
+            rotation=90,
+        )
         ax2.set_yticks(np.arange(zone_xy.shape[2], step=SECTION_SIZE))
-        ax2.set_yticklabels(np.arange(self.y_world, self.y_world + zone_xy.shape[2], SECTION_SIZE), rotation=0)
+        ax2.set_yticklabels(
+            np.arange(self.y_world, self.y_world + zone_xy.shape[2], SECTION_SIZE),
+            rotation=0,
+        )
 
         # Add the YZ view on bottom right
         ax3 = plt.subplot(gs[0, 2])
@@ -159,9 +197,15 @@ class Zone:
         ax3.set_xlabel("z")
         ax3.set_ylabel("y")
         ax3.set_xticks(np.arange(zone_zy.shape[0], step=CHUNK_XZ_SIZE))
-        ax3.set_xticklabels(np.arange(self.z_world, self.z_world + zone_zy.shape[0], CHUNK_XZ_SIZE), rotation=90)
+        ax3.set_xticklabels(
+            np.arange(self.z_world, self.z_world + zone_zy.shape[0], CHUNK_XZ_SIZE),
+            rotation=90,
+        )
         ax3.set_yticks(np.arange(zone_zy.shape[2], step=SECTION_SIZE))
-        ax3.set_yticklabels(np.arange(self.y_world, self.y_world + zone_zy.shape[2], SECTION_SIZE), rotation=0)
+        ax3.set_yticklabels(
+            np.arange(self.y_world, self.y_world + zone_zy.shape[2], SECTION_SIZE),
+            rotation=0,
+        )
 
         # Adjust layout
         plt.tight_layout()
