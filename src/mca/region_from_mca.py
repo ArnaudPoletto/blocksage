@@ -44,16 +44,10 @@ def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
 
     indices_per_long = 64 // bit_length
 
-    # Create an array of shift values with the correct bit_length
+    # Mask and shift the data
     shifts = np.arange(indices_per_long, dtype=np.uint64) * bit_length
-
-    # Reshape data to align with indices_per_long
     data_reshaped = data.repeat(indices_per_long).reshape(data.shape[0], -1)
-
-    # Create an array of bit masks
     mask = (1 << bit_length) - 1
-
-    # Apply the masks and shifts
     masked_data = (data_reshaped >> shifts) & mask
 
     return masked_data.flatten()[:TOTAL_SECTION_BLOCKS] # Flatten and trim to the correct size (last long may be incomplete)

@@ -8,7 +8,7 @@ import numpy as np
 
 from src.mca.zone import Zone
 from src.mca.section import Section
-from src.config import CHUNK_XZ_SIZE
+from src.config import CHUNK_XZ_SIZE, MIN_Y
 
 
 class Chunk(Zone):
@@ -30,7 +30,7 @@ class Chunk(Zone):
 
         x_world = region.x_world + CHUNK_XZ_SIZE * x
         z_world = region.z_world + CHUNK_XZ_SIZE * z 
-        super().__init__(region.data[x, z], x_world, z_world)
+        super().__init__(region.data[x, z], x_world, MIN_Y, z_world)
         self.region = region
         self.x = x
         self.z = z

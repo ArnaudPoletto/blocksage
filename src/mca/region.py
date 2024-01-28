@@ -8,6 +8,7 @@ import numpy as np
 
 from src.mca.zone import Zone
 from src.mca.chunk import Chunk
+from src.config import MIN_Y
 
 class Region(Zone):
     """A region as a collection of blocks of shape (region_x, region_z, section, section_y, section_z, section_x)."""
@@ -28,7 +29,7 @@ class Region(Zone):
                 f"❌ region_blocks must be of shape (region_x, region_z, section, section_y, section_z, section_x), not {data.shape}."
             )
 
-        super().__init__(data, x_world, z_world)
+        super().__init__(data, x_world, MIN_Y, z_world)
 
     def get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_region()

@@ -7,6 +7,8 @@ sys.path.append(str(GLOBAL_DIR))
 from src.mca.zone import Zone
 import numpy as np
 
+from src.config import SECTION_SIZE
+
 
 class Section(Zone):
     """A section of a chunk. There are 24 sections in a chunk."""
@@ -24,9 +26,8 @@ class Section(Zone):
         if y < 0 or y >= chunk.data.shape[1]:
             raise ValueError(f"❌ y must be in [0, {chunk.data.shape[1]}), not {y}.")
 
-        super().__init__(chunk.data[y], chunk.x_world, chunk.z_world)
+        super().__init__(chunk.data[y], chunk.x_world, y * SECTION_SIZE, chunk.z_world)
         self.chunk = chunk
-        self.y = y
 
     def get_data_by_section(self) -> np.ndarray:
         """
@@ -38,5 +39,4 @@ class Section(Zone):
         return self.data.transpose((3, 1, 2))
     
     def get_data_for_display(self) -> np.ndarray:
-        region_y = self.SECTION_SIZE * self.y
-        return self.chunk.get_data_for_display()[:, region_y:region_y + self.SECTION_SIZE:, ]
+        return self.chunk.get_data_for_display()[:, self.y_world:self.y_world + SECTION_SIZE:, ]
