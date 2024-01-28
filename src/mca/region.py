@@ -10,7 +10,7 @@ from src.mca.zone import Zone
 from src.mca.chunk import Chunk
 from src.mca.cluster import Cluster
 from src.mca.section import Section
-from src.config import MIN_Y, N_SECTIONS_PER_CLUSTER_PER_DIM
+from src.config import MIN_Y, DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM, MAX_N_SECTIONS_PER_CLUSTER_PER_DIM
 
 class Region(Zone):
     """A region as a collection of blocks of shape (region_x, region_z, section, section_y, section_z, section_x)."""
@@ -54,7 +54,7 @@ class Region(Zone):
         
         return Chunk(self, x, z)
     
-    def get_cluster(self, x: int, y: int, z: int) -> Cluster:
+    def get_cluster(self, x: int, y: int, z: int, cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM) -> Cluster:
         """
         Returns a cluster of blocks.
 
@@ -62,18 +62,21 @@ class Region(Zone):
             x (int): The x coordinate of the cluster.
             y (int): The y coordinate of the cluster.
             z (int): The z coordinate of the cluster.
+            cluster_size (int, optional): The number of sections per cluster per dimension. Defaults to DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM.
 
         Returns:
             np.ndarray: The cluster of blocks.
         """
-        if x < 0 or x >= self.data.shape[0] - N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(f"❌ x must be in [0, {self.data.shape[0] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {x}.")
-        if z < 0 or z >= self.data.shape[1] - N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(f"❌ z must be in [0, {self.data.shape[1] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {z}.")
-        if y < 0 or y >= self.data.shape[2] - N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(f"❌ y must be in [0, {self.data.shape[2] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {y}.")
+        if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
+            raise ValueError(f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}.")
+        if x < 0 or x >= self.data.shape[0] - cluster_size:
+            raise ValueError(f"❌ x must be in [0, {self.data.shape[0] - cluster_size}), not {x}.")
+        if z < 0 or z >= self.data.shape[1] - cluster_size:
+            raise ValueError(f"❌ z must be in [0, {self.data.shape[1] - cluster_size}), not {z}.")
+        if y < 0 or y >= self.data.shape[2] - cluster_size:
+            raise ValueError(f"❌ y must be in [0, {self.data.shape[2] - cluster_size}), not {y}.")
         
-        return Cluster(self, x, y, z)
+        return Cluster(self, x, y, z, cluster_size)
     
     def get_section(self, x: int, y: int, z: int) -> Section:
         """
