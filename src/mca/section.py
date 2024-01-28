@@ -13,8 +13,6 @@ from src.config import SECTION_SIZE
 class Section(Zone):
     """A section of a chunk. There are 24 sections in a chunk."""
 
-    SECTION_SIZE = 16
-
     def __init__(self, chunk, y: int) -> None:
         """
         Initialize a section.
@@ -23,8 +21,8 @@ class Section(Zone):
             chunk (Chunl): The chunk the section belongs to.
             y (int): The y coordinate of the section.
         """
-        if y < 0 or y >= chunk.data.shape[1]:
-            raise ValueError(f"❌ y must be in [0, {chunk.data.shape[1]}), not {y}.")
+        if y < 0 or y >= chunk.data.shape[0]:
+            raise ValueError(f"❌ y must be in [0, {chunk.data.shape[0]}), not {y}.")
 
         super().__init__(chunk.data[y], chunk.x_world, y * SECTION_SIZE, chunk.z_world)
         self.chunk = chunk
@@ -36,7 +34,6 @@ class Section(Zone):
         Returns:
             np.ndarray: Array of block IDs of shape (section_x, section_y, section_z).
         """
-        print(self.data.shape)
         return self.data.transpose((2, 0, 1))
     
     def get_data_for_display(self) -> np.ndarray:

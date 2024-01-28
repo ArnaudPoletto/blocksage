@@ -10,12 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 
 from src.utils.block_dictionary import get_block_id_dictionary, get_block_color_dictionary
-from src.config import MIN_Y, MAX_Y, CHUNK_XZ_SIZE, SECTION_SIZE
-
-AIR_NAME = "air"
-CAVE_AIR_NAME = "cave_air"
-VOID_AIR_NAME = "void_air"
-BLACK_COLOR = [0, 0, 0]
+from src.config import MIN_Y, MAX_Y, CHUNK_XZ_SIZE, SECTION_SIZE, AIR_NAME, CAVE_AIR_NAME, VOID_AIR_NAME, BLACK_COLOR
 
 
 class Zone:
