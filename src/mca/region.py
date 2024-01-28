@@ -9,6 +9,7 @@ import numpy as np
 from src.mca.zone import Zone
 from src.mca.chunk import Chunk
 from src.mca.cluster import Cluster
+from src.mca.section import Section
 from src.config import MIN_Y, N_SECTIONS_PER_CLUSTER_PER_DIM
 
 class Region(Zone):
@@ -74,29 +75,26 @@ class Region(Zone):
         
         return Cluster(self, x, y, z)
     
-    def get_data_by_section(self) -> np.ndarray:
+    def get_section(self, x: int, y: int, z: int) -> Section:
         """
-        View the blocks by section, i.e. as an array of shape (region_x, region_z, section, section_x, section_y, section_z).
+        Returns a section of blocks.
+
+        Args:
+            x (int): The x coordinate of the section.
+            y (int): The y coordinate of the section.
+            z (int): The z coordinate of the section.
 
         Returns:
-            np.ndarray: Array of block IDs of shape (region_x, region_z, section, section_x, section_y, section_z).
+            np.ndarray: The section of blocks.
         """
-        return self.data.transpose((0, 1, 2, 5, 3, 4))
+        if x < 0 or x >= self.data.shape[0]:
+            raise ValueError(f"❌ x must be in [0, {self.data.shape[0]}), not {x}.")
+        if z < 0 or z >= self.data.shape[1]:
+            raise ValueError(f"❌ z must be in [0, {self.data.shape[1]}), not {z}.")
+        if y < 0 or y >= self.data.shape[2]:
+            raise ValueError(f"❌ y must be in [0, {self.data.shape[2]}), not {y}.")
 
-
-    def get_data_by_chunk(self) -> np.ndarray:
-        """
-        View the blocks by chunk, i.e. as an array of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
-
-        Returns:
-            np.ndarray: Array of block IDs of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
-        """
-        region_x, region_z, section, section_y, section_z, section_x = self.data.shape
-
-        return self.data \
-            .reshape((region_x, region_z, section * section_y, section_z, section_x)) \
-            .transpose((0, 1, 4, 2, 3))
-
+        return self.get_chunk(x, z).get_section(y)
 
     def get_data_by_region(self) -> np.ndarray:
         """
@@ -112,3 +110,25 @@ class Region(Zone):
             .reshape((region_x * section_x, region_z * section_z, section * section_y))
             .transpose(0, 2, 1)
         )
+    
+    def get_data_by_chunk(self) -> np.ndarray:
+        """
+        View the blocks by chunk, i.e. as an array of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
+
+        Returns:
+            np.ndarray: Array of block IDs of shape (region_x, region_z, chunk_x, chunk_y, chunk_z) = (region_x, region_z, section_x, section * section_y, section_z).
+        """
+        region_x, region_z, section, section_y, section_z, section_x = self.data.shape
+
+        return self.data \
+            .reshape((region_x, region_z, section * section_y, section_z, section_x)) \
+            .transpose((0, 1, 4, 2, 3))
+    
+    def get_data_by_section(self) -> np.ndarray:
+        """
+        View the blocks by section, i.e. as an array of shape (region_x, region_z, section, section_x, section_y, section_z).
+
+        Returns:
+            np.ndarray: Array of block IDs of shape (region_x, region_z, section, section_x, section_y, section_z).
+        """
+        return self.data.transpose((0, 1, 2, 5, 3, 4))

@@ -35,6 +35,9 @@ class Chunk(Zone):
         self.x = x
         self.z = z
 
+    def get_data_for_display(self) -> np.ndarray:
+        return self.get_data_by_chunk()
+
     def get_section(self, y: int) -> Section:
         """
         Returns a section of blocks.
@@ -50,16 +53,6 @@ class Chunk(Zone):
         
         return Section(self, y)
 
-    def get_data_by_section(self) -> np.ndarray:
-        """
-        View the blocks by section, i.e. as an array of shape (section, section_x, section_y, section_z).
-
-        Returns:
-            np.ndarray: Array of block IDs of shape (section, section_x, section_y, section_z).
-        """
-        return self.data.transpose((0, 3, 1, 2))
-
-
     def get_data_by_chunk(self) -> np.ndarray:
         """
         View the blocks by chunk, i.e. as an array of shape (chunk_x, chunk_y, chunk_z) = (section_x, section * section_y, section_z).
@@ -72,6 +65,12 @@ class Chunk(Zone):
         return self.data \
             .reshape((section * section_y, section_z, section_x)) \
             .transpose((2, 0, 1))
+    
+    def get_data_by_section(self) -> np.ndarray:
+        """
+        View the blocks by section, i.e. as an array of shape (section, section_x, section_y, section_z).
 
-    def get_data_for_display(self) -> np.ndarray:
-        return self.get_data_by_chunk()
+        Returns:
+            np.ndarray: Array of block IDs of shape (section, section_x, section_y, section_z).
+        """
+        return self.data.transpose((0, 3, 1, 2))

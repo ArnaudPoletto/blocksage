@@ -36,6 +36,9 @@ class Cluster(Zone):
         super().__init__(cluster_data, cluster_x_world, cluster_y_world, cluster_z_world)
         self.region = region
 
+    def get_data_for_display(self) -> np.ndarray:
+        return self.get_data_by_cluster()
+    
     def get_data_by_section(self) -> np.ndarray:
         """
         View the blocks by section, i.e. as an array of shape (3, 3, 3, section_x, section_y, section_z).
@@ -44,19 +47,6 @@ class Cluster(Zone):
             np.ndarray: Array of block IDs of shape (3, 3, 3, section_x, section_y, section_z).
         """
         return self.data.transpose((0, 1, 2, 5, 3, 4))
-    
-    def get_data_by_chunk(self) -> np.ndarray:
-        """
-        View the blocks by chunk, i.e. as an array of shape (3, 3, chunk_x, chunk_y, chunk_z) = (3, 3, section_x, section * section_y, section_z).
-
-        Returns:
-            np.ndarray: Array of block IDs of shape (3, 3, chunk_x, chunk_y, chunk_z) = (3, 3, section_x, section * section_y, section_z).
-        """
-        region_x, region_z, section, section_y, section_z, section_x = self.data.shape
-
-        return self.data \
-            .reshape((region_x, region_z, section * section_y, section_z, section_x)) \
-            .transpose((0, 1, 4, 2, 3))
 
     def get_data_by_cluster(self) -> np.ndarray:
         """
@@ -72,6 +62,3 @@ class Cluster(Zone):
             .reshape((region_x * section_x, region_z * section_z, section * section_y))
             .transpose(0, 2, 1)
         )
-
-    def get_data_for_display(self) -> np.ndarray:
-        return self.get_data_by_cluster()
