@@ -43,6 +43,15 @@ class Zone:
             int: The number of blocks in the zone.
         """
         return np.prod(self.data.shape)
+    
+    def get_world_coordinates(self) -> tuple:
+        """
+        Returns the world coordinates of the zone.
+
+        Returns:
+            tuple: The world coordinates of the zone.
+        """
+        return self.x_world, self.y_world, self.z_world
 
     @abstractmethod
     def get_data_for_display(self) -> np.ndarray:
@@ -124,7 +133,7 @@ class Zone:
 
         # Plot
         gs = GridSpec(1, 3)
-        plt.figure(figsize=(20, 20))
+        plt.figure(figsize=(15, 15))
 
         # Add the first XZ view on top and center
         ax1 = plt.subplot(gs[0, 0])

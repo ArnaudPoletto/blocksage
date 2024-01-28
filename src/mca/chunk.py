@@ -74,10 +74,4 @@ class Chunk(Zone):
             .transpose((2, 0, 1))
 
     def get_data_for_display(self) -> np.ndarray:
-        region_x = CHUNK_XZ_SIZE * self.x
-        region_z = CHUNK_XZ_SIZE * self.z
-        return self.region.get_data_for_display()[
-            region_x : region_x + CHUNK_XZ_SIZE,
-            :,
-            region_z : region_z + CHUNK_XZ_SIZE,
-        ]
+        return self.get_data_by_chunk()

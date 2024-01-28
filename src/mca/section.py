@@ -4,9 +4,9 @@ from pathlib import Path
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
-from src.mca.zone import Zone
 import numpy as np
 
+from src.mca.zone import Zone
 from src.config import SECTION_SIZE
 
 
@@ -36,7 +36,8 @@ class Section(Zone):
         Returns:
             np.ndarray: Array of block IDs of shape (section_x, section_y, section_z).
         """
-        return self.data.transpose((3, 1, 2))
+        print(self.data.shape)
+        return self.data.transpose((2, 0, 1))
     
     def get_data_for_display(self) -> np.ndarray:
-        return self.chunk.get_data_for_display()[:, self.y_world:self.y_world + SECTION_SIZE:, ]
+        return self.get_data_by_section()

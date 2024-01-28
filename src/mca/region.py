@@ -8,7 +8,8 @@ import numpy as np
 
 from src.mca.zone import Zone
 from src.mca.chunk import Chunk
-from src.config import MIN_Y
+from src.mca.cluster import Cluster
+from src.config import MIN_Y, N_SECTIONS_PER_CLUSTER_PER_DIM
 
 class Region(Zone):
     """A region as a collection of blocks of shape (region_x, region_z, section, section_y, section_z, section_x)."""
@@ -51,6 +52,27 @@ class Region(Zone):
             raise ValueError(f"❌ z must be in [0, {self.data.shape[1]}), not {z}.")
         
         return Chunk(self, x, z)
+    
+    def get_cluster(self, x: int, y: int, z: int) -> Cluster:
+        """
+        Returns a cluster of blocks.
+
+        Args:
+            x (int): The x coordinate of the cluster.
+            y (int): The y coordinate of the cluster.
+            z (int): The z coordinate of the cluster.
+
+        Returns:
+            np.ndarray: The cluster of blocks.
+        """
+        if x < 0 or x >= self.data.shape[0] - N_SECTIONS_PER_CLUSTER_PER_DIM:
+            raise ValueError(f"❌ x must be in [0, {self.data.shape[0] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {x}.")
+        if z < 0 or z >= self.data.shape[1] - N_SECTIONS_PER_CLUSTER_PER_DIM:
+            raise ValueError(f"❌ z must be in [0, {self.data.shape[1] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {z}.")
+        if y < 0 or y >= self.data.shape[2] - N_SECTIONS_PER_CLUSTER_PER_DIM:
+            raise ValueError(f"❌ y must be in [0, {self.data.shape[2] - N_SECTIONS_PER_CLUSTER_PER_DIM}), not {y}.")
+        
+        return Cluster(self, x, y, z)
     
     def get_data_by_section(self) -> np.ndarray:
         """
