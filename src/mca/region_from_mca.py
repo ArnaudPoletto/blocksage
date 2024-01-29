@@ -4,6 +4,7 @@ from pathlib import Path
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
+import os
 import zlib
 import struct
 import numpy as np
@@ -11,7 +12,6 @@ from tqdm import tqdm
 from io import BytesIO
 from nbtlib import File
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from line_profiler import profile
 
 from src.utils.log import log
 from src.utils.block_dictionary import get_block_id_dictionary
@@ -24,6 +24,7 @@ SECTOR_BYTES = 4096
 CHUNK_HEADER_SIZE = 5
 ZLIB_COMPRESSION_TYPE = 2
 SECTOR_COUNT_MASK = 0xFF
+
 
 TOTAL_SECTION_BLOCKS = SECTION_SIZE * SECTION_SIZE * SECTION_SIZE
 
@@ -158,7 +159,6 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.
     return _process_chunk(nbt_data, block_dict)
 
 
-@profile
 def get_region(
     file_path: str,
     block_id_dict: dict = None,
@@ -200,76 +200,75 @@ def get_region(
         )
         - 1
     )  # -1 for missing sections
-    futures = []
-    if parallelize_chunks:
-        executor = ProcessPoolExecutor()
 
-    region_x_world = None
-    region_z_world = None
-    if show_bar:
-        bar = tqdm(
-            total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM,
-            desc="🔄 Processing chunk",
-        )
-    for chunk_idx in range(N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM):
-        if locations[chunk_idx] == 0:
-            if show_bar:
-                bar.update(1)
-            continue
+    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+        futures = []
+        region_x_world = None
+        region_z_world = None
+        if show_bar:
+            bar = tqdm(
+                total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM,
+                desc="🔄 Processing chunk",
+            )
+        for chunk_idx in range(
+            N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM
+        ):
+            if locations[chunk_idx] == 0:
+                if show_bar:
+                    bar.update(1)
+                continue
 
-        # Get the chunk data as a stream
-        offset = (locations[chunk_idx] >> OFFSET_SHIFT) * SECTOR_BYTES
-        sector_count = locations[chunk_idx] & SECTOR_COUNT_MASK
-        chunk_data_stream = BytesIO(
-            region_data[offset : offset + sector_count * SECTOR_BYTES]
-        )
+            # Get the chunk data as a stream
+            offset = (locations[chunk_idx] >> OFFSET_SHIFT) * SECTOR_BYTES
+            sector_count = locations[chunk_idx] & SECTOR_COUNT_MASK
+            chunk_data_stream = BytesIO(
+                region_data[offset : offset + sector_count * SECTOR_BYTES]
+            )
 
-        # Process the chunk, either in parallel or sequentially
-        if parallelize_chunks:
-            futures.append(
-                (
+            # Process the chunk, either in parallel or sequentially
+            if parallelize_chunks:
+                futures.append(
                     executor.submit(
                         _read_and_process_chunk, chunk_data_stream, block_id_dict
                     )
                 )
-            )
-        else:
-            (
-                chunk_x_region,
-                chunk_z_region,
-                chunk_x_world,
-                chunk_z_world,
-                chunk_blocks,
-            ) = _read_and_process_chunk(chunk_data_stream, block_id_dict)
-            data[chunk_x_region, chunk_z_region] = chunk_blocks
-            if show_bar:
-                bar.update(1)
+            else:
+                (
+                    chunk_x_region,
+                    chunk_z_region,
+                    chunk_x_world,
+                    chunk_z_world,
+                    chunk_blocks,
+                ) = _read_and_process_chunk(chunk_data_stream, block_id_dict)
+                data[chunk_x_region, chunk_z_region] = chunk_blocks
+                if show_bar:
+                    bar.update(1)
 
-            if chunk_x_region == 0 and chunk_z_region == 0:
-                region_x_world = chunk_x_world
-                region_z_world = chunk_z_world
+                if chunk_x_region == 0 and chunk_z_region == 0:
+                    region_x_world = chunk_x_world
+                    region_z_world = chunk_z_world
 
-    # Wait for all chunks to finish processing if parallelized
-    for future in as_completed(futures):
-        try:
-            (
-                chunk_x_region,
-                chunk_z_region,
-                chunk_x_world,
-                chunk_z_world,
-                chunk_blocks,
-            ) = future.result()
-            data[chunk_x_region, chunk_z_region] = chunk_blocks
-            if show_bar:
-                bar.update(1)
+        # Wait for all chunks to finish processing if parallelized
+        for future in as_completed(futures):
+            try:
+                (
+                    chunk_x_region,
+                    chunk_z_region,
+                    chunk_x_world,
+                    chunk_z_world,
+                    chunk_blocks,
+                ) = future.result()
+                data[chunk_x_region, chunk_z_region] = chunk_blocks
+                if show_bar:
+                    bar.update(1)
 
-            if chunk_x_region == 0 and chunk_z_region == 0:
-                region_x_world = chunk_x_world
-                region_z_world = chunk_z_world
-        except Exception as e:
-            log(f"❌ Error while processing chunk: {e}")
+                if chunk_x_region == 0 and chunk_z_region == 0:
+                    region_x_world = chunk_x_world
+                    region_z_world = chunk_z_world
+            except Exception as e:
+                log(f"❌ Error while processing chunk: {e}")
 
-    if show_bar:
-        bar.close()
+        if show_bar:
+            bar.close()
 
     return Region(data, region_x_world, region_z_world)

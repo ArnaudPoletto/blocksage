@@ -67,6 +67,12 @@ class Zone:
         """
         pass
 
+    def get_data(self):
+        """
+        Returns the data of the zone.
+        """
+        return self.data
+
     @staticmethod
     def _get_first_non_air_rgb(
         zone: np.ndarray, block_id_dict: dict, id_color_dict: dict
