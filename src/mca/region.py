@@ -28,14 +28,14 @@ class Region(Zone):
 
     SHAPE_SIZE = 6
 
-    def __init__(self, data: np.ndarray, x_world: int, z_world: int) -> None:
+    def __init__(self, data: np.ndarray, x_world: int = 0, z_world: int = 0) -> None:
         """
         Initialize a region.
 
         Args:
             data (np.ndarray): The array containing the block indices of shape (region_x, region_z, section, section_y, section_z, section_x).
-            x_world (int): The x coordinate of the region in the world.
-            z_world (int): The z coordinate of the region in the world.
+            x_world (int): The x coordinate of the region in the world. Defaults to 0.
+            z_world (int): The z coordinate of the region in the world. Defaults to 0.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
@@ -113,7 +113,9 @@ class Region(Zone):
         if y < 0 or y >= y_max:
             raise ValueError(f"❌ y must be in [0, {y_max}), not {y}.")
 
-        data = self.data[x : x + cluster_size, z : z + cluster_size, y : y + cluster_size]
+        data = self.data[
+            x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
+        ]
         x_world = self.x_world + x * SECTION_SIZE
         y_world = self.y_world + y * SECTION_SIZE
         z_world = self.z_world + z * SECTION_SIZE
@@ -150,9 +152,9 @@ class Region(Zone):
         region_x, region_z, section, section_y, section_z, section_x = self.data.shape
 
         return (
-            self.data.transpose(0, 5, 1, 4, 2, 3)
+            self.data.transpose((0, 5, 1, 4, 2, 3))
             .reshape((region_x * section_x, region_z * section_z, section * section_y))
-            .transpose(0, 2, 1)
+            .transpose((0, 2, 1))
         )
 
     def get_data_by_chunk(self) -> np.ndarray:
@@ -209,7 +211,15 @@ class Region(Zone):
         for x in range(0, region_x - cluster_size + 1, stride):
             for z in range(0, region_z - cluster_size + 1, stride):
                 for y in range(0, section - cluster_size + 1, stride):
-                    cluster = Cluster(self, x, y, z, cluster_size)
+                    data = self.data[
+                        x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
+                    ]
+                    x_world = self.x_world + x * SECTION_SIZE
+                    y_world = self.y_world + y * SECTION_SIZE
+                    z_world = self.z_world + z * SECTION_SIZE
+                    cluster = Cluster(data, x_world, y_world, z_world, cluster_size)
+                    
                     if only_relevant and not cluster.is_relevant(block_id_dict):
                         continue
+
                     yield cluster

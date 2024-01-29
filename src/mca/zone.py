@@ -139,13 +139,13 @@ class Zone:
         )
 
         # XY view
-        zone_xy = self.get_data_for_display().transpose(0, 2, 1)
+        zone_xy = self.get_data_for_display().transpose((0, 2, 1))
         first_non_air_rgb_xy = Zone._get_first_non_air_rgb(
             zone_xy, block_id_dict, id_color_dict
         )
 
         # ZY view
-        zone_zy = self.get_data_for_display().transpose(2, 0, 1)
+        zone_zy = self.get_data_for_display().transpose((2, 0, 1))
         first_non_air_rgb_zy = Zone._get_first_non_air_rgb(
             zone_zy, block_id_dict, id_color_dict
         )
@@ -156,7 +156,7 @@ class Zone:
 
         # Add the first XZ view on top and center
         ax1 = plt.subplot(gs[0, 0])
-        ax1.imshow(first_non_air_rgb_xz.transpose(1, 0, 2), origin="lower")
+        ax1.imshow(first_non_air_rgb_xz.transpose((1, 0, 2)), origin="lower")
         ax1.set_title("Map of first non-air blocks (xz)")
         ax1.set_xlabel("x")
         ax1.set_ylabel("z")
@@ -173,7 +173,7 @@ class Zone:
 
         # Add the XY view on bottom left
         ax2 = plt.subplot(gs[0, 1])
-        ax2.imshow(first_non_air_rgb_xy.transpose(1, 0, 2), origin="lower")
+        ax2.imshow(first_non_air_rgb_xy.transpose((1, 0, 2)), origin="lower")
         ax2.set_title("Map of first non-air blocks (xy)")
         ax2.set_xlabel("x")
         ax2.set_ylabel("y")
@@ -190,7 +190,7 @@ class Zone:
 
         # Add the YZ view on bottom right
         ax3 = plt.subplot(gs[0, 2])
-        ax3.imshow(first_non_air_rgb_zy.transpose(1, 0, 2), origin="lower")
+        ax3.imshow(first_non_air_rgb_zy.transpose((1, 0, 2)), origin="lower")
         ax3.set_title("Map of first non-air blocks (zy)")
         ax3.set_xlabel("z")
         ax3.set_ylabel("y")

@@ -27,9 +27,9 @@ class Cluster(Zone):
     def __init__(
         self,
         data: np.ndarray,
-        x_world: int,
-        y_world: int,
-        z_world: int,
+        x_world: int = 0,
+        y_world: int = 0,
+        z_world: int = 0,
         cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
     ) -> None:
         """
@@ -37,9 +37,9 @@ class Cluster(Zone):
 
         Args:
             data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the cluster in the world.
-            y_world (int): The y coordinate of the cluster in the world.
-            z_world (int): The z coordinate of the cluster in the world.
+            x_world (int): The x coordinate of the cluster in the world. Defaults to 0.
+            y_world (int): The y coordinate of the cluster in the world. Defaults to 0.
+            z_world (int): The z coordinate of the cluster in the world. Defaults to 0.
             cluster_size (int, optional): The number of sections per cluster per dimension. Defaults to DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM.
         """
         if len(data.shape) != self.SHAPE_SIZE:
@@ -89,8 +89,11 @@ class Cluster(Zone):
         if z < 0 or z >= self.data.shape[2]:
             raise ValueError(f"❌ z must be in [0, {self.data.shape[2]}), not {z}.")
 
-        chunk = self.region.get_chunk(self.x + x, self.z + z)
-        return Section(chunk, self.y + y)
+        data = self.data[x, y, z]
+        x_world = self.x_world + x * SECTION_SIZE
+        y_world = self.y_world + y * SECTION_SIZE
+        z_world = self.z_world + z * SECTION_SIZE
+        return Section(data, x_world, y_world, z_world)
 
     def get_data_by_section(self) -> np.ndarray:
         """
@@ -111,9 +114,9 @@ class Cluster(Zone):
         region_x, region_z, section, section_y, section_z, section_x = self.data.shape
 
         return (
-            self.data.transpose(0, 5, 1, 4, 2, 3)
+            self.data.transpose((0, 5, 1, 4, 2, 3))
             .reshape((region_x * section_x, region_z * section_z, section * section_y))
-            .transpose(0, 2, 1)
+            .transpose((0, 2, 1))
         )
 
     def is_relevant(self, block_id_dict: dict = None) -> bool:

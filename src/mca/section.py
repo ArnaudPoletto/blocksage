@@ -17,7 +17,7 @@ class Section(Zone):
     SHAPE_SIZE = 3
 
     def __init__(
-        self, data: np.ndarray, x_world: int, y_world: int, z_world: int
+        self, data: np.ndarray, x_world: int = 0, y_world: int = 0, z_world: int = 0
     ) -> None:
         """
         Initialize a section.
@@ -40,8 +40,7 @@ class Section(Zone):
             warn(
                 f"The section data do not fit the expected shape (section_x, section_y, section_z) = ({SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
-            
-        
+
         super().__init__(data, x_world, y_world, z_world)
 
     def get_data_by_section(self) -> np.ndarray:

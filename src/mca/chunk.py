@@ -17,14 +17,14 @@ class Chunk(Zone):
 
     SHAPE_SIZE = 4
 
-    def __init__(self, data, x_world, z_world) -> None:
+    def __init__(self, data: np.array, x_world: int = 0, z_world: int = 0) -> None:
         """
         Initialize a region.
 
         Args:
             data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the region in the world.
-            z_world (int): The z coordinate of the region in the world.
+            x_world (int): The x coordinate of the region in the world. Defaults to 0.
+            z_world (int): The z coordinate of the region in the world. Defaults to 0.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
@@ -39,7 +39,7 @@ class Chunk(Zone):
             warn(
                 f"The region data do not fit the expected shape (section, section_y, section_z, section_x) = ({MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
-        
+
         super().__init__(data, x_world, MIN_Y, z_world)
 
     def get_data_for_display(self) -> np.ndarray:
