@@ -27,41 +27,43 @@ if __name__ == "__main__":
         os.listdir(REGION_DATASET_PATH), desc="🔄 Processing region folder"
     ):
         region_folder_path = os.path.join(REGION_DATASET_PATH, region_folder)
-        if os.path.isdir(region_folder_path):
-            # Iterate through each region file in the folder
-            for region_file in os.listdir(region_folder_path):
-                region_file_path = os.path.join(region_folder_path, region_file)
+        if not os.path.isdir(region_folder_path):
+            continue
+        
+        # Iterate through each region file in the folder
+        for region_file in os.listdir(region_folder_path):
+            region_file_path = os.path.join(region_folder_path, region_file)
 
-                # Get region
-                region = get_region(
-                    region_file_path,
-                    block_id_dict=block_id_dict,
-                    parallelize_chunks=True,
-                    show_bar=False,
+            # Get region
+            region = get_region(
+                region_file_path,
+                block_id_dict=block_id_dict,
+                parallelize_chunks=True,
+                show_bar=False,
+            )
+
+            # Get clusters
+            relevant_clusters = region.get_clusters(
+                block_id_dict=block_id_dict,
+                cluster_size=CLUSTER_SIZE,
+                stride=CLUSTER_STRIDE,
+                only_relevant=True,
+            )
+            relevant_cluster_data_list = [
+                cluster.get_data_by_cluster() for cluster in relevant_clusters
+            ]
+
+            # Save clusters
+            for i, relevant_cluster_data in enumerate(relevant_cluster_data_list):
+                # Define the path to save the cluster data
+                cluster_file_path = os.path.join(
+                    CLUSTER_DATASET_PATH,
+                    region_folder,
+                    f'{region_file.replace(".mca", "")}_{i}.npy',
                 )
 
-                # Get clusters
-                relevant_clusters = region.get_clusters(
-                    block_id_dict=block_id_dict,
-                    cluster_size=CLUSTER_SIZE,
-                    stride=CLUSTER_STRIDE,
-                    only_relevant=True,
-                )
-                relevant_cluster_data_list = [
-                    cluster.get_data_by_cluster() for cluster in relevant_clusters
-                ]
+                # Create the directory if it doesn't exist
+                os.makedirs(os.path.dirname(cluster_file_path), exist_ok=True)
 
-                # Save clusters
-                for i, relevant_cluster_data in enumerate(relevant_cluster_data_list):
-                    # Define the path to save the cluster data
-                    cluster_file_path = os.path.join(
-                        CLUSTER_DATASET_PATH,
-                        region_folder,
-                        f'{region_file.replace(".mca", "")}_{i}.npy',
-                    )
-
-                    # Create the directory if it doesn't exist
-                    os.makedirs(os.path.dirname(cluster_file_path), exist_ok=True)
-
-                    # Save the cluster data
-                    np.save(cluster_file_path, relevant_cluster_data)
+                # Save the cluster data
+                np.save(cluster_file_path, relevant_cluster_data)

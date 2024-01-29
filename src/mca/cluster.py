@@ -7,67 +7,64 @@ sys.path.append(str(GLOBAL_DIR))
 import numpy as np
 
 from src.mca.zone import Zone
+from src.utils.log import warn
 from src.mca.section import Section
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
-    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    SECTION_SIZE,
     AIR_NAME,
+    SECTION_SIZE,
     NATURAL_UNDERGROUND_BLOCK_NAMES,
+    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
 )
 
 
 class Cluster(Zone):
     """A cluster of sections. There are 9 clusters in a cluster, in a 3x3 grid."""
 
+    SHAPE_SIZE = 6
+
     def __init__(
         self,
-        region,
-        x: int,
-        y: int,
-        z: int,
+        data: np.ndarray,
+        x_world: int,
+        y_world: int,
+        z_world: int,
         cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
     ) -> None:
         """
         Initialize a cluster.
 
         Args:
-            region (Region): The region the cluster belongs to.
-            x (int): The x coordinate of the cluster.
-            y (int): The y coordinate of the cluster.
-            z (int): The z coordinate of the cluster.
+            data (np.ndarray): The array containing the block indices.
+            x_world (int): The x coordinate of the cluster in the world.
+            y_world (int): The y coordinate of the cluster in the world.
+            z_world (int): The z coordinate of the cluster in the world.
             cluster_size (int, optional): The number of sections per cluster per dimension. Defaults to DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM.
         """
+        if len(data.shape) != self.SHAPE_SIZE:
+            raise ValueError(
+                f"❌ cluster_blocks must be of shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x), not {data.shape}."
+            )
+        if (
+            data.shape[0] != cluster_size
+            or data.shape[1] != cluster_size
+            or data.shape[2] != cluster_size
+            or data.shape[3] != SECTION_SIZE
+            or data.shape[4] != SECTION_SIZE
+            or data.shape[5] != SECTION_SIZE
+        ):
+            warn(
+                f"The region data do not fit the expected shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x) = ({cluster_size}, {cluster_size}, {cluster_size}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
+            )
         if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(
                 f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
             )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
-        x_max = region.data.shape[0] - cluster_size + 1
-        z_max = region.data.shape[1] - cluster_size + 1
-        y_max = region.data.shape[2] - cluster_size + 1
-        if x < 0 or x >= x_max:
-            raise ValueError(f"❌ x must be in [0, {x_max}), not {x}.")
-        if z < 0 or z >= z_max:
-            raise ValueError(f"❌ z must be in [0, {z_max}), not {z}.")
-        if y < 0 or y >= y_max:
-            raise ValueError(f"❌ y must be in [0, {y_max}), not {y}.")
 
-        cluster_data = region.data[
-            x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
-        ]
-        cluster_x_world = region.x_world + x * SECTION_SIZE
-        cluster_y_world = region.y_world + y * SECTION_SIZE
-        cluster_z_world = region.z_world + z * SECTION_SIZE
-        super().__init__(
-            cluster_data, cluster_x_world, cluster_y_world, cluster_z_world
-        )
-        self.region = region
-        self.x = x
-        self.y = y
-        self.z = z
+        super().__init__(data, x_world, y_world, z_world)
         self.cluster_size = cluster_size
 
     def get_data_for_display(self) -> np.ndarray:
@@ -97,10 +94,10 @@ class Cluster(Zone):
 
     def get_data_by_section(self) -> np.ndarray:
         """
-        View the blocks by section, i.e. as an array of shape (cluster_size, cluster_size, cluster_size, section_x, section_y, section_z).
+        View the blocks by section, i.e. as an array of shape (cluster_x, cluster_y, cluster_z, section_x, section_y, section_z).
 
         Returns:
-            np.ndarray: Array of block IDs of shape (cluster_size, 3cluster_size, cluster_size, section_x, section_y, section_z).
+            np.ndarray: Array of block IDs of shape (cluster_x, cluster_y, cluster_z, section_x, section_y, section_z).
         """
         return self.data.transpose((0, 1, 2, 5, 3, 4))
 

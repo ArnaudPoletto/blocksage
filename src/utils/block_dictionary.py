@@ -8,7 +8,7 @@ import os
 import json
 import numpy as np
 
-from src.utils.logs import log
+from src.utils.log import log
 
 DATA_PATH = str(GLOBAL_DIR / "data") + "/"
 BLOCK_STATES_PATH = DATA_PATH + "blockstates/"

@@ -11,11 +11,15 @@ from src.mca.zone import Zone
 from src.mca.chunk import Chunk
 from src.mca.cluster import Cluster
 from src.mca.section import Section
+from src.utils.log import warn
 from src.config import (
     MIN_Y,
-    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    SECTION_SIZE,
+    CHUNK_XZ_SIZE,
     DEFAULT_CLUSTER_STRIDE,
+    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    N_CHUNKS_PER_REGION_PER_DIM,
 )
 
 
@@ -29,13 +33,24 @@ class Region(Zone):
         Initialize a region.
 
         Args:
-            data (np.ndarray): The array containing the block indices.
+            data (np.ndarray): The array containing the block indices of shape (region_x, region_z, section, section_y, section_z, section_x).
             x_world (int): The x coordinate of the region in the world.
             z_world (int): The z coordinate of the region in the world.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
                 f"❌ region_blocks must be of shape (region_x, region_z, section, section_y, section_z, section_x), not {data.shape}."
+            )
+        if (
+            data.shape[0] != N_CHUNKS_PER_REGION_PER_DIM
+            or data.shape[1] != N_CHUNKS_PER_REGION_PER_DIM
+            or data.shape[2] != MAX_N_SECTIONS_PER_CLUSTER_PER_DIM
+            or data.shape[3] != SECTION_SIZE
+            or data.shape[4] != SECTION_SIZE
+            or data.shape[5] != SECTION_SIZE
+        ):
+            warn(
+                f"The region data do not fit the expected shape (region_x, region_z, section, section_y, section_z, section_x) = ({N_CHUNKS_PER_REGION_PER_DIM}, {N_CHUNKS_PER_REGION_PER_DIM}, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
 
         super().__init__(data, x_world, MIN_Y, z_world)
@@ -59,7 +74,9 @@ class Region(Zone):
         if z < 0 or z >= self.data.shape[1]:
             raise ValueError(f"❌ z must be in [0, {self.data.shape[1]}), not {z}.")
 
-        return Chunk(self, x, z)
+        x_world = self.x_world + CHUNK_XZ_SIZE * x
+        z_world = self.z_world + CHUNK_XZ_SIZE * z
+        return Chunk(self.data[x, z], x_world, z_world)
 
     def get_cluster(
         self,
@@ -96,7 +113,11 @@ class Region(Zone):
         if y < 0 or y >= y_max:
             raise ValueError(f"❌ y must be in [0, {y_max}), not {y}.")
 
-        return Cluster(self, x, y, z, cluster_size)
+        data = self.data[x : x + cluster_size, z : z + cluster_size, y : y + cluster_size]
+        x_world = self.x_world + x * SECTION_SIZE
+        y_world = self.y_world + y * SECTION_SIZE
+        z_world = self.z_world + z * SECTION_SIZE
+        return Cluster(data, x_world, y_world, z_world, cluster_size)
 
     def get_section(self, x: int, y: int, z: int) -> Section:
         """

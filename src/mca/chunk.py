@@ -8,32 +8,39 @@ import numpy as np
 
 from src.mca.zone import Zone
 from src.mca.section import Section
-from src.config import CHUNK_XZ_SIZE, MIN_Y
+from src.config import SECTION_SIZE, MAX_N_SECTIONS_PER_CLUSTER_PER_DIM, MIN_Y
+from src.utils.log import warn
 
 
 class Chunk(Zone):
     """A chunk of a region. There are 32x32 chunks in a region."""
 
-    def __init__(self, region, x: int, z: int) -> None:
+    SHAPE_SIZE = 4
+
+    def __init__(self, data, x_world, z_world) -> None:
         """
         Initialize a region.
 
         Args:
-            region (Region): The region the chunk belongs to.
-            x (int): The x coordinate of the chunk.
-            z (int): The z coordinate of the chunk.
+            data (np.ndarray): The array containing the block indices.
+            x_world (int): The x coordinate of the region in the world.
+            z_world (int): The z coordinate of the region in the world.
         """
-        if x < 0 or x >= region.data.shape[0]:
-            raise ValueError(f"❌ x must be in [0, {region.data.shape[0]}), not {x}.")
-        if z < 0 or z >= region.data.shape[1]:
-            raise ValueError(f"❌ z must be in [0, {region.data.shape[1]}), not {z}.")
-
-        x_world = region.x_world + CHUNK_XZ_SIZE * x
-        z_world = region.z_world + CHUNK_XZ_SIZE * z
-        super().__init__(region.data[x, z], x_world, MIN_Y, z_world)
-        self.region = region
-        self.x = x
-        self.z = z
+        if len(data.shape) != self.SHAPE_SIZE:
+            raise ValueError(
+                f"❌ chunk_blocks must be of shape (section, section_y, section_z, section_x), not {data.shape}."
+            )
+        if (
+            data.shape[0] != MAX_N_SECTIONS_PER_CLUSTER_PER_DIM
+            or data.shape[1] != SECTION_SIZE
+            or data.shape[2] != SECTION_SIZE
+            or data.shape[3] != SECTION_SIZE
+        ):
+            warn(
+                f"The region data do not fit the expected shape (section, section_y, section_z, section_x) = ({MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
+            )
+        
+        super().__init__(data, x_world, MIN_Y, z_world)
 
     def get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_chunk()
@@ -51,7 +58,7 @@ class Chunk(Zone):
         if y < 0 or y >= self.data.shape[0]:
             raise ValueError(f"❌ y must be in [0, {self.data.shape[0]}), not {y}.")
 
-        return Section(self, y)
+        return Section(self.data[y], self.x_world, y * SECTION_SIZE, self.z_world)
 
     def get_data_by_chunk(self) -> np.ndarray:
         """

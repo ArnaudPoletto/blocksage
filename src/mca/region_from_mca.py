@@ -13,7 +13,7 @@ from nbtlib import File
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from line_profiler import profile
 
-from src.utils.logs import log
+from src.utils.log import log
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.mca.region import Region
 from src.config import N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE, MIN_Y, SECTION_SIZE

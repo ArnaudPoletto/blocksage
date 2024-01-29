@@ -14,8 +14,6 @@ from src.utils.block_dictionary import (
     get_block_color_dictionary,
 )
 from src.config import (
-    MIN_Y,
-    MAX_Y,
     CHUNK_XZ_SIZE,
     SECTION_SIZE,
     AIR_NAME,

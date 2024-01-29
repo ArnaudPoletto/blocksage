@@ -1,5 +1,16 @@
+import torch
+import numpy as np
+
+# Torch
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# Dataset
+DATASET_MASKED_BLOCK_ID = np.uint16(-1)
+
+# Log
 PRINT_LOGS = True
 
+# MCA file
 N_CHUNKS_PER_REGION_PER_DIM = 32
 MIN_Y = -64
 MAX_Y = 320
@@ -10,7 +21,10 @@ DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM = 3
 MAX_N_SECTIONS_PER_CLUSTER_PER_DIM = 24
 DEFAULT_CLUSTER_STRIDE = 1
 
-# Blocks
+# Color
+BLACK_COLOR = [0, 0, 0]
+
+# Block
 AIR_NAME = "air"
 CAVE_AIR_NAME = "cave_air"
 VOID_AIR_NAME = "void_air"
@@ -23,6 +37,7 @@ DEEPSLATE_NAME = "deepslate"
 ANDESITE_NAME = "andesite"
 DIORITE_NAME = "diorite"
 GRANITE_NAME = "granite"
+TUFF_NAME = "tuff"
 BEDROCK_NAME = "bedrock"
 
 GRASS_BLOCK_NAME = "grass_block"
@@ -44,8 +59,6 @@ DEEPSLATE_DIAMOND_ORE_NAME = "deepslate_diamond_ore"
 DEEPSLATE_EMERALD_ORE_NAME = "deepslate_emerald_ore"
 DEEPSLATE_LAPIS_ORE_NAME = "deepslate_lapis_ore"
 DEEPSLATE_REDSTONE_ORE_NAME = "deepslate_redstone_ore"
-
-TUFF_NAME = "tuff"
 
 NATURAL_UNDERGROUND_BLOCK_NAMES = [
     CAVE_AIR_NAME,
@@ -76,5 +89,3 @@ NATURAL_UNDERGROUND_BLOCK_NAMES = [
     DEEPSLATE_LAPIS_ORE_NAME,
     DEEPSLATE_REDSTONE_ORE_NAME,
 ]
-
-BLACK_COLOR = [0, 0, 0]
