@@ -22,9 +22,12 @@ class Chunk(Zone):
         Initialize a region.
 
         Args:
-            data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the region in the world. Defaults to 0.
-            z_world (int): The z coordinate of the region in the world. Defaults to 0.
+            data (np.ndarray): Array containing the block indices of shape (section, section_y, section_z, section_x).
+            x_world (int, optional): x coordinate of the region in the world. Defaults to 0.
+            z_world (int, optional): z coordinate of the region in the world. Defaults to 0.
+
+        Raises:
+            ValueError: If the data do not have the expected shape.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
@@ -47,13 +50,16 @@ class Chunk(Zone):
 
     def get_section(self, y: int) -> Section:
         """
-        Returns a section of blocks.
+        Get a section of blocks.
 
         Args:
-            y (int): The y coordinate of the section.
+            y (int): y coordinate of the section.
+
+        Raises:
+            ValueError: If the y coordinate is out of bounds.
 
         Returns:
-            Section: The section of blocks.
+            Section: Section of blocks.
         """
         if y < 0 or y >= self.data.shape[0]:
             raise ValueError(f"❌ y must be in [0, {self.data.shape[0]}), not {y}.")

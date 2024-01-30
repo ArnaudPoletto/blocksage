@@ -15,7 +15,7 @@ from src.config import (
     SECTION_SIZE,
     NATURAL_UNDERGROUND_BLOCK_NAMES,
     MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    DEFAULT_CLUSTER_SIZE,
 )
 
 
@@ -30,17 +30,21 @@ class Cluster(Zone):
         x_world: int = 0,
         y_world: int = 0,
         z_world: int = 0,
-        cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+        cluster_size: int = DEFAULT_CLUSTER_SIZE,
     ) -> None:
         """
         Initialize a cluster.
 
         Args:
-            data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the cluster in the world. Defaults to 0.
-            y_world (int): The y coordinate of the cluster in the world. Defaults to 0.
-            z_world (int): The z coordinate of the cluster in the world. Defaults to 0.
-            cluster_size (int, optional): The number of sections per cluster per dimension. Defaults to DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM.
+            data (np.ndarray): Array containing the block indices of shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x).
+            x_world (int, optional): x coordinate of the cluster in the world. Defaults to 0.
+            y_world (int, optional): y coordinate of the cluster in the world. Defaults to 0.
+            z_world (int, optional): z coordinate of the cluster in the world. Defaults to 0.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
+
+        Raises:
+            ValueError: If the data do not have the expected shape.
+            ValueError: If the cluster size is out of bounds, or even.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
@@ -72,13 +76,16 @@ class Cluster(Zone):
 
     def get_section(self, x: int, y: int, z: int) -> Section:
         """
-        Returns a section of blocks.
+        Get a section of blocks.
 
         Args:
-            x (int): The x coordinate of the section in the cluster.
-            y (int): The y coordinate of the section in the cluster.
-            z (int): The z coordinate of the section in the cluster.
+            x (int): x coordinate of the section in the cluster.
+            y (int): y coordinate of the section in the cluster.
+            z (int): z coordinate of the section in the cluster.
 
+        Raises:
+            ValueError: If the x, y or z coordinates are out of bounds.
+            
         Returns:
             np.ndarray: The section of blocks.
         """
@@ -121,14 +128,14 @@ class Cluster(Zone):
 
     def is_relevant(self, block_id_dict: dict = None) -> bool:
         """
-        A cluster is relevant if the following requirements are met:
+        Check whether the cluster is relevant. A cluster is relevant if the following requirements are met:
         - There is no non-loaded section in the cluster.
         - The center section has at most 90% of non-air blocks.
         - The center section has at most 90% of air blocks.
         - The cluster has less than 70% of natural underground blocks.
 
         Args:
-            block_id_dict (dict): The dictionary of block IDs. Defaults to None.
+            block_id_dict (dict, optional): Dictionary of block IDs. Defaults to None.
 
         Returns:
             bool: Whether the cluster is relevant.

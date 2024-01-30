@@ -23,10 +23,13 @@ class Section(Zone):
         Initialize a section.
 
         Args:
-            data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the section in the world.
-            y_world (int): The y coordinate of the section in the world.
-            z_world (int): The z coordinate of the section in the world.
+            data (np.ndarray): Array containing the block indices of shape (section_y, section_z, section_x).
+            x_world (int, optional): x coordinate of the section in the world.
+            y_world (int, optional): y coordinate of the section in the world.
+            z_world (int, optional): z coordinate of the section in the world.
+
+        Raises:
+            ValueError: If the data do not have the expected shape.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(

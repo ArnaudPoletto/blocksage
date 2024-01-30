@@ -25,7 +25,6 @@ class UNet3D(nn.Module):
         x2 = self.relu(self.encoder_conv2(x2))
         x3 = self.encoder_maxpool(x2)
         x3 = self.relu(self.encoder_conv3(x3))
-        x4 = self.encoder_maxpool(x3)
 
         # Decoder
         x = self.relu(self.decoder_conv1(x3))
@@ -33,5 +32,17 @@ class UNet3D(nn.Module):
         x = self.relu(self.decoder_conv2(x))
         x = torch.cat([x, x1], dim=1)  # Concatenate skip connection
         x = self.relu(self.decoder_conv3(x))
+
+        # Only take the center section of the prediction
+        # cluster_size = x.shape[2] // SECTION_SIZE
+        # center_section_start = SECTION_SIZE * (cluster_size // 2)
+        # center_section_end = center_section_start + SECTION_SIZE
+        # x = x[
+        #     :, # batch
+        #     :, # classes
+        #     center_section_start:center_section_end, 
+        #     center_section_start:center_section_end, 
+        #     center_section_start:center_section_end
+        # ]
 
         return x

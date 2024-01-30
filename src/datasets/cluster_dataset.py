@@ -45,6 +45,9 @@ class ClusterDataset(Dataset):
                 # Add cluster file path to cluster paths
                 cluster_file_paths.append(cluster_file_path)
 
+        # Shuffle the cluster file paths
+        np.random.shuffle(cluster_file_paths)
+
         return cluster_file_paths
 
     def __init__(self, cluster_dataset_path: str, num_block_classes: int) -> None:
@@ -114,10 +117,19 @@ class ClusterDataset(Dataset):
         cluster_masked = ClusterDataset.reshape_to_3d(cluster_masked)
         cluster_gt = ClusterDataset.reshape_to_3d(cluster_gt)
 
+        # # Only take the center section for the ground truth
+        # cluster_size = cluster_gt.shape[2] // SECTION_SIZE
+        # center_section_start = SECTION_SIZE * (cluster_size // 2)
+        # center_section_end = center_section_start + SECTION_SIZE
+        # cluster_gt = cluster_gt[
+        #     center_section_start:center_section_end,
+        #     center_section_start:center_section_end,
+        #     center_section_start:center_section_end,
+        # ]
+
         # To tensor
         cluster_masked = torch.from_numpy(cluster_masked)
         cluster_gt = torch.from_numpy(cluster_gt)
-
 
         # To one hot tensors
         cluster_masked = one_hot(cluster_masked.long(), self.num_total_classes) \

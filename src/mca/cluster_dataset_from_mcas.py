@@ -21,6 +21,16 @@ CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
 
 
 def parse_arguments():
+    """
+    Parse command line arguments.
+
+    Returns:
+        tuple: Tuple containing:
+            cluster_size (int): Size of the clusters in blocks. Defaults to DEFAULT_CLUSTER_SIZE.
+            cluster_stride (int): Stride of the clusters in blocks. Defaults to DEFAULT_CLUSTER_STRIDE.
+            parallelize (bool): Whether to parallelize the processing of region files. Defaults to False.
+            max_concurrent_processes (int): Maximum number of concurrent processes. Defaults to the number of CPU cores.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--cluster_size",
@@ -70,6 +80,18 @@ def process_region_file(
     block_id_dict: dict,
     parallelize: bool,
 ):
+    """
+    Process a region file.
+
+    Args:
+        region_folder (str): Name of the region folder.
+        region_folder_path (str): Path to the region folder.
+        region_file (str): Name of the region file.
+        cluster_size (int): Size of the clusters in blocks.
+        cluster_stride (int): Stride of the clusters in blocks.
+        block_id_dict (dict): Dictionary of block states and their corresponding index.
+        parallelize (bool): Whether to parallelize the processing of region files.
+    """
     region_file_path = os.path.join(region_folder_path, region_file)
 
     # Get region

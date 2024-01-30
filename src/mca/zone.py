@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import Tuple
 
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
@@ -33,9 +34,9 @@ class Zone:
         Initialize a zone.
 
         Args:
-            data (np.ndarray): The array containing the block indices.
-            x_world (int): The x coordinate of the zone in the world.
-            z_world (int): The z coordinate of the zone in the world.
+            data (np.ndarray): Array containing the block indices.
+            x_world (int): x coordinate of the zone in the world.
+            z_world (int): z coordinate of the zone in the world.
         """
         self.data = data
         self.x_world = x_world
@@ -44,32 +45,35 @@ class Zone:
 
     def get_number_of_blocks(self) -> int:
         """
-        Returns the number of blocks in the zone.
+        Get the number of blocks in the zone.
 
         Returns:
-            int: The number of blocks in the zone.
+            int: Number of blocks in the zone.
         """
         return np.prod(self.data.shape)
 
-    def get_world_coordinates(self) -> tuple:
+    def get_world_coordinates(self) -> Tuple[int, int, int]:
         """
-        Returns the world coordinates of the zone.
+        Get the world coordinates of the zone.
 
         Returns:
-            tuple: The world coordinates of the zone.
+            Tuple[int, int, int]: World coordinates of the zone.
         """
         return self.x_world, self.y_world, self.z_world
 
     @abstractmethod
     def get_data_for_display(self) -> np.ndarray:
         """
-        Returns the data of the zone with the view applied, for display purposes.
+        Get the data of the zone with the view applied, for display purposes.
         """
         pass
 
     def get_data(self):
         """
-        Returns the data of the zone.
+        Get the raw data of the zone.
+
+        Returns:
+            np.ndarray: Raw data of the zone.
         """
         return self.data
 
@@ -77,11 +81,32 @@ class Zone:
     def _get_first_non_air_rgb(
         zone: np.ndarray, block_id_dict: dict, id_color_dict: dict
     ) -> np.ndarray:
+        """
+        Get the rgb values of the first non-air block in each slice of the zone. The slice is computed over the second axis of 
+        the array representing the zone, i.e. for an array of shape (x, y, z), the final array will have shape (x, z, 3), where
+        the last axis contains the rgb values.
+
+        Args:
+            zone (np.ndarray): Array of block indices.
+            block_id_dict (dict): Dictionary mapping block names to block ids.
+            id_color_dict (dict): Dictionary mapping block ids to rgb values.
+
+        Raises:
+            ValueError: If the zone is not of shape (x, y, z).
+
+        Returns:
+            np.ndarray: Array of rgb values of the first non-air block in each slice of the zone.
+        """
+        if len(zone.shape) != 3:
+            raise ValueError(
+                f"❌ zone must be of shape (x, y, z), not {zone.shape}."
+            )
+        
+        # Get the first non-air block for each xz slice
         air_block_id = block_id_dict[AIR_NAME]
         cave_air_block_id = block_id_dict[CAVE_AIR_NAME]
         void_air_block_id = block_id_dict[VOID_AIR_NAME]
 
-        # Get the first non-air block for each xz slice
         non_air_mask = (
             (zone != air_block_id)
             & (zone != cave_air_block_id)

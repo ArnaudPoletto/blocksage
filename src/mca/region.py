@@ -16,9 +16,9 @@ from src.config import (
     MIN_Y,
     SECTION_SIZE,
     CHUNK_XZ_SIZE,
+    DEFAULT_CLUSTER_SIZE,
     DEFAULT_CLUSTER_STRIDE,
     MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
     N_CHUNKS_PER_REGION_PER_DIM,
 )
 
@@ -33,9 +33,12 @@ class Region(Zone):
         Initialize a region.
 
         Args:
-            data (np.ndarray): The array containing the block indices of shape (region_x, region_z, section, section_y, section_z, section_x).
-            x_world (int): The x coordinate of the region in the world. Defaults to 0.
-            z_world (int): The z coordinate of the region in the world. Defaults to 0.
+            data (np.ndarray): Array containing the block indices of shape (region_x, region_z, section, section_y, section_z, section_x).
+            x_world (int, optional): x coordinate of the region in the world. Defaults to 0.
+            z_world (int, optional): z coordinate of the region in the world. Defaults to 0.
+
+        Raises:
+            ValueError: If the data do not have the expected shape.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
@@ -60,14 +63,17 @@ class Region(Zone):
 
     def get_chunk(self, x: int, z: int) -> Chunk:
         """
-        Returns a chunk of blocks.
+        Get a chunk of blocks.
 
         Args:
-            x (int): The x coordinate of the chunk.
-            z (int): The z coordinate of the chunk.
+            x (int): x coordinate of the chunk.
+            z (int): z coordinate of the chunk.
+
+        Raises:
+            ValueError: If the x or z coordinates are out of bounds.
 
         Returns:
-            np.ndarray: The chunk of blocks.
+            np.ndarray: Chunk of blocks.
         """
         if x < 0 or x >= self.data.shape[0]:
             raise ValueError(f"❌ x must be in [0, {self.data.shape[0]}), not {x}.")
@@ -83,19 +89,23 @@ class Region(Zone):
         x: int,
         y: int,
         z: int,
-        cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+        cluster_size: int = DEFAULT_CLUSTER_SIZE,
     ) -> Cluster:
         """
-        Returns a cluster of blocks.
+        Get a cluster of blocks.
 
         Args:
-            x (int): The x coordinate of the cluster.
-            y (int): The y coordinate of the cluster.
-            z (int): The z coordinate of the cluster.
-            cluster_size (int, optional): The number of sections per cluster per dimension. Defaults to DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM.
+            x (int): x coordinate of the cluster.
+            y (int): y coordinate of the cluster.
+            z (int): z coordinate of the cluster.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
+
+        Raises:
+            ValueError: If the cluster_size is out of bounds, or even.
+            ValueError: If the x, y or z coordinates are out of bounds.
 
         Returns:
-            np.ndarray: The cluster of blocks.
+            np.ndarray: Cluster of blocks.
         """
         if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(
@@ -119,19 +129,23 @@ class Region(Zone):
         x_world = self.x_world + x * SECTION_SIZE
         y_world = self.y_world + y * SECTION_SIZE
         z_world = self.z_world + z * SECTION_SIZE
+
         return Cluster(data, x_world, y_world, z_world, cluster_size)
 
     def get_section(self, x: int, y: int, z: int) -> Section:
         """
-        Returns a section of blocks.
+        Get a section of blocks.
 
         Args:
-            x (int): The x coordinate of the section.
-            y (int): The y coordinate of the section.
-            z (int): The z coordinate of the section.
+            x (int): x coordinate of the section.
+            y (int): y coordinate of the section.
+            z (int): z coordinate of the section.
+
+        Raises:
+            ValueError: If the x, y or z coordinates are out of bounds.
 
         Returns:
-            np.ndarray: The section of blocks.
+            np.ndarray: Section of blocks.
         """
         if x < 0 or x >= self.data.shape[0]:
             raise ValueError(f"❌ x must be in [0, {self.data.shape[0]}), not {x}.")
@@ -182,21 +196,25 @@ class Region(Zone):
     def get_clusters(
         self,
         block_id_dict: dict = None,
-        cluster_size: int = DEFAULT_N_SECTIONS_PER_CLUSTER_PER_DIM,
+        cluster_size: int = DEFAULT_CLUSTER_SIZE,
         stride: int = DEFAULT_CLUSTER_STRIDE,
         only_relevant: bool = True,
     ) -> Generator[Cluster, None, None]:
         """
-        Returns a generator of clusters of blocks.
+        Get a generator of clusters of blocks.
 
         Args:
-            block_id_dict (dict, optional): The dictionary of block IDs. Defaults to None.
-            cluster_size (int): The number of sections per cluster per dimension.
-            stride (int): The stride between clusters.
-            only_relevant (bool): Whether to only return relevant clusters.
+            block_id_dict (dict, optional): Dictionary of block IDs. Defaults to None.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
+            stride (int, optional): Stride between clusters. Defaults to DEFAULT_CLUSTER_STRIDE.
+            only_relevant (bool, optional): Whether to only return relevant clusters. Defaults to True.
+
+        Raises:
+            ValueError: If the cluster_size is out of bounds, or even.
+            ValueError: If the stride is out of bounds.
 
         Returns:
-            Generator[Cluster]: The clusters of blocks.
+            Generator[Cluster]: Clusters of blocks.
         """
         if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(

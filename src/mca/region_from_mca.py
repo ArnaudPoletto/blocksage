@@ -37,6 +37,9 @@ def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
         data (np.ndarray): LongArray containing the block indices.
         bit_length (int): Number of bits per block index.
 
+    Raises:
+        ValueError: If the bit length is invalid.
+
     Returns:
         np.ndarray: Array of block indices.
     """
@@ -58,18 +61,18 @@ def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
 
 def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
     """
-    Process a chunk of blocks, i.e. a 24x16x16x16 part of the world.
+    Process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
     Args:
         nbt_data (File): NBT data of the chunk.
         block_dict (dict): Dictionary of block states and their corresponding index.
 
     Returns:
-        int: X coordinate of the chunk in the region.
-        int: Z coordinate of the chunk in the region.
-        int: X coordinate of the chunk in the world.
-        int: Z coordinate of the chunk in the world.
-        np.ndarray: Array of block IDs of shape (24, 16, 16, 16).
+        int: x coordinate of the chunk in the region.
+        int: z coordinate of the chunk in the region.
+        int: x coordinate of the chunk in the world.
+        int: z coordinate of the chunk in the world.
+        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
     chunk_x_in_region = nbt_data["xPos"] % N_CHUNKS_PER_REGION_PER_DIM
     chunk_z_in_region = nbt_data["zPos"] % N_CHUNKS_PER_REGION_PER_DIM
@@ -123,18 +126,18 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
 
 def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.ndarray:
     """
-    Read and process a chunk of blocks, i.e. a 24x16x16x16 part of the world.
+    Read and process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
     Args:
         chunk_data_stream (BytesIO): Stream of the chunk data.
         block_dict (dict): Dictionary of block states and their corresponding index.
 
     Returns:
-        int: X coordinate of the chunk in the region.
-        int: Z coordinate of the chunk in the region.
-        int: X coordinate of the chunk in the world.
-        int: Z coordinate of the chunk in the world.
-        np.ndarray: Array of block IDs of shape (24, 16, 16, 16).
+        int: x coordinate of the chunk in the region.
+        int: z coordinate of the chunk in the region.
+        int: x coordinate of the chunk in the world.
+        int: z coordinate of the chunk in the world.
+        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
 
     # Seek the chunk from the offset and sector count
@@ -170,9 +173,9 @@ def get_region(
 
     Args:
         file_path (str): Path to the region file.
-        block_dict (dict): Dictionary of block states and their corresponding index.
-        parallelize_chunks (bool): Whether to parallelize chunk processing. Defaults to True.
-        show_bar (bool): Whether to show a progress bar. Defaults to True.
+        block_dict (dict, optional): Dictionary of block states and their corresponding index.
+        parallelize_chunks (bool, optional): Whether to parallelize chunk processing. Defaults to True.
+        show_bar (bool, optional): Whether to show a progress bar. Defaults to True.
 
     Returns:
         Region: A region of blocks.
