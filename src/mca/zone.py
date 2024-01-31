@@ -1,11 +1,5 @@
-import sys
-from pathlib import Path
-from typing import Tuple
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 import numpy as np
+from typing import Tuple
 from abc import abstractmethod
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec

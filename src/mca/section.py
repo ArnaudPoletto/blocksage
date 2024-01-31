@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 import numpy as np
 
 from src.mca.zone import Zone

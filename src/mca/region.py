@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 import numpy as np
 from typing import Generator
 
@@ -16,8 +10,8 @@ from src.config import (
     MIN_Y,
     SECTION_SIZE,
     CHUNK_XZ_SIZE,
-    DEFAULT_CLUSTER_SIZE,
-    DEFAULT_CLUSTER_STRIDE,
+    CLUSTER_SIZE,
+    CLUSTER_STRIDE,
     MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
     N_CHUNKS_PER_REGION_PER_DIM,
 )
@@ -89,7 +83,7 @@ class Region(Zone):
         x: int,
         y: int,
         z: int,
-        cluster_size: int = DEFAULT_CLUSTER_SIZE,
+        cluster_size: int = CLUSTER_SIZE,
     ) -> Cluster:
         """
         Get a cluster of blocks.
@@ -98,7 +92,7 @@ class Region(Zone):
             x (int): x coordinate of the cluster.
             y (int): y coordinate of the cluster.
             z (int): z coordinate of the cluster.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
 
         Raises:
             ValueError: If the cluster_size is out of bounds, or even.
@@ -196,8 +190,8 @@ class Region(Zone):
     def get_clusters(
         self,
         block_id_dict: dict = None,
-        cluster_size: int = DEFAULT_CLUSTER_SIZE,
-        stride: int = DEFAULT_CLUSTER_STRIDE,
+        cluster_size: int = CLUSTER_SIZE,
+        stride: int = CLUSTER_STRIDE,
         only_relevant: bool = True,
     ) -> Generator[Cluster, None, None]:
         """
@@ -205,8 +199,8 @@ class Region(Zone):
 
         Args:
             block_id_dict (dict, optional): Dictionary of block IDs. Defaults to None.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
-            stride (int, optional): Stride between clusters. Defaults to DEFAULT_CLUSTER_STRIDE.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
+            stride (int, optional): Stride between clusters. Defaults to CLUSTER_STRIDE.
             only_relevant (bool, optional): Whether to only return relevant clusters. Defaults to True.
 
         Raises:

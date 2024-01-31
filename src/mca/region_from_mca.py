@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 import os
 import zlib
 import struct
@@ -13,9 +7,9 @@ from io import BytesIO
 from nbtlib import File
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from src.utils.log import log
-from src.utils.block_dictionary import get_block_id_dictionary
 from src.mca.region import Region
+from src.utils.log import log, warn
+from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE, MIN_Y, SECTION_SIZE
 
 OFFSET_SHIFT = 8
@@ -74,6 +68,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
         int: z coordinate of the chunk in the world.
         np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
+    # Get chunk coordinates
     chunk_x_in_region = nbt_data["xPos"] % N_CHUNKS_PER_REGION_PER_DIM
     chunk_z_in_region = nbt_data["zPos"] % N_CHUNKS_PER_REGION_PER_DIM
     chunk_x_in_world = nbt_data["xPos"] * SECTION_SIZE
@@ -81,7 +76,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
     chunk_blocks = np.zeros(
         (CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE),
         dtype=np.uint16,
-    )
+    ) - 1  # -1 for missing sections
 
     for section in nbt_data["sections"]:
         section_palette = np.asarray(
@@ -91,6 +86,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
             ]
         )
         section_data = section["block_states"].get("data")
+
         y = int(section["Y"]) - MIN_Y // SECTION_SIZE
 
         # If there is no data array, all blocks are the same: the first block in the palette
@@ -106,9 +102,16 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
             section_block_indices = process_section(section_data, bit_length)
 
         # Convert block indices to block IDs
-        section_blocks = np.vectorize(block_dict.get)(
+        section_blocks = np.vectorize(lambda x: block_dict.get(x, -1))(
             section_palette[section_block_indices]
         )
+
+        # Warn if there are unknown blocks
+        if np.any(section_blocks == -1):
+            unknown_blocks = np.unique(section_palette[section_block_indices][section_blocks == -1])
+            warn(
+                f"Unknown blocks found in chunk {chunk_x_in_world}, {chunk_z_in_world}: {unknown_blocks}."
+            )
 
         # Add the section to the chunk
         chunk_blocks[y] = section_blocks.reshape(
@@ -247,9 +250,11 @@ def get_region(
                 if show_bar:
                     bar.update(1)
 
-                if chunk_x_region == 0 and chunk_z_region == 0:
-                    region_x_world = chunk_x_world
-                    region_z_world = chunk_z_world
+                if region_x_world is None or region_z_world is None:
+                    computed_region_x_world = chunk_x_world - (chunk_x_region * SECTION_SIZE)
+                    computed_region_z_world = chunk_z_world - (chunk_z_region * SECTION_SIZE)
+                    region_x_world = computed_region_x_world
+                    region_z_world = computed_region_z_world
 
         # Wait for all chunks to finish processing if parallelized
         for future in as_completed(futures):
@@ -265,9 +270,11 @@ def get_region(
                 if show_bar:
                     bar.update(1)
 
-                if chunk_x_region == 0 and chunk_z_region == 0:
-                    region_x_world = chunk_x_world
-                    region_z_world = chunk_z_world
+                if region_x_world is None or region_z_world is None:
+                    computed_region_x_world = chunk_x_world - (chunk_x_region * SECTION_SIZE)
+                    computed_region_z_world = chunk_z_world - (chunk_z_region * SECTION_SIZE)
+                    region_x_world = computed_region_x_world
+                    region_z_world = computed_region_z_world
             except Exception as e:
                 log(f"❌ Error while processing chunk: {e}")
 

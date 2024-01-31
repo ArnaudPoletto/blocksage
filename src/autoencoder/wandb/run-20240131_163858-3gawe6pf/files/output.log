@@ -1,0 +1,130 @@
+
+🚀 Training AutoEncoderTrainer method for 1 epochs...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epochs:   0%|                                                                                                                                                                                                                                                          | 0/1 [03:32<?, ?epoch/s, eval_batch=129/1536]
+Traceback (most recent call last):
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\autoencoder_train.py", line 146, in <module>
+    statistics = trainer.train(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 162, in train
+    self._train_one_epoch(
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 325, in _train_one_epoch
+    stats = self._evaluate(val_loader, bar=bar)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 386, in _evaluate
+    for batch_idx, batch in enumerate(loader):
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\dataloader.py", line 631, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\dataloader.py", line 675, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\datasets\cluster_dataset.py", line 122, in __getitem__
+    .float()
+     ^^^^^^^
+KeyboardInterrupt

@@ -1,11 +1,29 @@
+import sys
+from pathlib import Path
+
+GLOBAL_DIR = Path(__file__).parent / ".."
+sys.path.append(str(GLOBAL_DIR))
+
 import torch
-import numpy as np
+
+# Production vs development
+PRODUCTION = False
+
+# Paths
+DATA_PATH = str(GLOBAL_DIR / "data") + "/"
+CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
+
+# Random
+SEED = 42
 
 # Torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Log
-PRINT_LOGS = True
+PRINT_LOGS = PRODUCTION == False
+
+# Wandb
+WANDB_PROJECT_NAME = "blocksage"
 
 # MCA file
 SECTION_SIZE = 16
@@ -15,12 +33,23 @@ MAX_Y = 320
 CHUNK_Y_SIZE = MAX_Y - MIN_Y
 CHUNK_XZ_SIZE = 16
 
-DEFAULT_CLUSTER_SIZE = 3
-DEFAULT_CLUSTER_STRIDE = 1
+CLUSTER_SIZE = 3
+CLUSTER_STRIDE = 1
 MAX_N_SECTIONS_PER_CLUSTER_PER_DIM = CHUNK_Y_SIZE // SECTION_SIZE
 
 N_CHUNKS_PER_REGION_PER_DIM = 32
 
+# Dataset and dataloader
+DATASET_SUBSET_FRACTION = 1.0 if PRODUCTION else 0.01
+TRAIN_SPLIT = 0.9
+VAL_SPLIT = 0.05
+TEST_SPLIT = 0.05
+BATCH_SIZE = 2
+NUM_WORKERS = 0
+
+# Model
+ENCODER_CONV_CHANNELS = [512, 128, 32]
+DECODER_CONV_CHANNELS = [32, 128, 512]
 
 # Color
 BLACK_COLOR = [0, 0, 0]

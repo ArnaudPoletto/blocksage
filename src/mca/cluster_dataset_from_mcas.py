@@ -13,9 +13,9 @@ import argparse
 from src.utils.log import warn
 from src.mca.region_from_mca import get_region
 from src.utils.block_dictionary import get_block_id_dictionary
-from src.config import DEFAULT_CLUSTER_SIZE, DEFAULT_CLUSTER_STRIDE
+from src.config import CLUSTER_SIZE, CLUSTER_STRIDE
+from src.config import DATA_PATH
 
-DATA_PATH = str(GLOBAL_DIR / "data") + "/"
 REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
 CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
 
@@ -26,8 +26,8 @@ def parse_arguments():
 
     Returns:
         tuple: Tuple containing:
-            cluster_size (int): Size of the clusters in blocks. Defaults to DEFAULT_CLUSTER_SIZE.
-            cluster_stride (int): Stride of the clusters in blocks. Defaults to DEFAULT_CLUSTER_STRIDE.
+            cluster_size (int): Size of the clusters in blocks. Defaults to CLUSTER_SIZE.
+            cluster_stride (int): Stride of the clusters in blocks. Defaults to CLUSTER_STRIDE.
             parallelize (bool): Whether to parallelize the processing of region files. Defaults to False.
             max_concurrent_processes (int): Maximum number of concurrent processes. Defaults to the number of CPU cores.
     """
@@ -35,13 +35,13 @@ def parse_arguments():
     parser.add_argument(
         "--cluster_size",
         type=int,
-        default=DEFAULT_CLUSTER_SIZE,
+        default=CLUSTER_SIZE,
         help="Size of the clusters in blocks.",
     )
     parser.add_argument(
         "--cluster_stride",
         type=int,
-        default=DEFAULT_CLUSTER_STRIDE,
+        default=CLUSTER_STRIDE,
         help="Stride of the clusters in blocks.",
     )
     parser.add_argument(

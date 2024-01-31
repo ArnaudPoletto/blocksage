@@ -1,0 +1,33 @@
+
+🚀 Training AutoEncoderTrainer method for 1 epochs...
+Epochs:   0%|                                                                                                                                                                                                                                                                   | 0/1 [00:00<?, ?epoch/s]
+Traceback (most recent call last):
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\autoencoder_train.py", line 146, in <module>
+    statistics = trainer.train(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 162, in train
+    self._train_one_epoch(
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 293, in _train_one_epoch
+    train_loss, _, _ = self._forward_pass(batch)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\autoencoder_trainer.py", line 75, in _forward_pass
+    outputs = self.model(cluster_masked)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\nn\modules\module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\nn\modules\module.py", line 1561, in _call_impl
+    result = forward_call(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\models\autoencoder.py", line 66, in forward
+    x = self.encoder(x)
+        ^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\nn\modules\module.py", line 1511, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\nn\modules\module.py", line 1520, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\nn\modules\module.py", line 374, in _forward_unimplemented
+    raise NotImplementedError(f"Module [{type(self).__name__}] is missing the required \"forward\" function")
+NotImplementedError: Module [Encoder] is missing the required "forward" function

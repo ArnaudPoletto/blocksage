@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 from src.config import PRINT_LOGS
 
 

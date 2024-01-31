@@ -1,0 +1,120 @@
+
+🚀 Training AutoEncoderTrainer method for 1 epochs...
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Epochs:   0%|                                                                                                                                                                                                                                                          | 0/1 [03:25<?, ?epoch/s, eval_batch=237/3071]
+Traceback (most recent call last):
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\autoencoder_train.py", line 146, in <module>
+    statistics = trainer.train(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 162, in train
+    self._train_one_epoch(
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 325, in _train_one_epoch
+    stats = self._evaluate(val_loader, bar=bar)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 387, in _evaluate
+    val_loss, pred, target = self._forward_pass(batch)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\autoencoder_trainer.py", line 71, in _forward_pass
+    cluster_gt = cluster_gt.to(DEVICE)
+                 ^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

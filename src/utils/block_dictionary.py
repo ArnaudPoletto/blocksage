@@ -6,11 +6,10 @@ sys.path.append(str(GLOBAL_DIR))
 
 import os
 import json
-import numpy as np
 
 from src.utils.log import log
+from src.config import DATA_PATH
 
-DATA_PATH = str(GLOBAL_DIR / "data") + "/"
 BLOCK_STATES_PATH = DATA_PATH + "blockstates/"
 BLOCK_DICT_PATH = DATA_PATH + "block_id_dict.json"
 BLOCK_COLOR_DICT_PATH = DATA_PATH + "block_color_dict.json"

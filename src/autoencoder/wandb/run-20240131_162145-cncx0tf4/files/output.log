@@ -1,0 +1,43 @@
+
+🚀 Training AutoEncoderTrainer method for 1 epochs...
+
+
+
+
+
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [04:10<?, ?epoch/s, batch=10/24567, train_loss=0.0000, val_loss=0.0000]
+Traceback (most recent call last):
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\autoencoder_train.py", line 146, in <module>
+    statistics = trainer.train(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 162, in train
+    self._train_one_epoch(
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 325, in _train_one_epoch
+    stats = self._evaluate(val_loader, bar=bar)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 383, in _evaluate
+    total = 0
+        ^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\dataloader.py", line 631, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\dataloader.py", line 675, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\fetch.py", line 54, in fetch
+    return self.collate_fn(data)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\collate.py", line 277, in default_collate
+    return collate(batch, collate_fn_map=default_collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\collate.py", line 144, in collate
+    return [collate(samples, collate_fn_map=collate_fn_map) for samples in transposed]  # Backwards compatibility.
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\collate.py", line 121, in collate
+    return collate_fn_map[elem_type](batch, collate_fn_map=collate_fn_map)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\anaconda3\envs\dm\Lib\site-packages\torch\utils\data\_utils\collate.py", line 174, in collate_tensor_fn
+    return torch.stack(batch, 0, out=out)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

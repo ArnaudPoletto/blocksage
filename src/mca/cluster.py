@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-GLOBAL_DIR = Path(__file__).parent / ".." / ".."
-sys.path.append(str(GLOBAL_DIR))
-
 import numpy as np
 
 from src.mca.zone import Zone
@@ -15,7 +9,7 @@ from src.config import (
     SECTION_SIZE,
     NATURAL_UNDERGROUND_BLOCK_NAMES,
     MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
-    DEFAULT_CLUSTER_SIZE,
+    CLUSTER_SIZE,
 )
 
 
@@ -30,7 +24,7 @@ class Cluster(Zone):
         x_world: int = 0,
         y_world: int = 0,
         z_world: int = 0,
-        cluster_size: int = DEFAULT_CLUSTER_SIZE,
+        cluster_size: int = CLUSTER_SIZE,
     ) -> None:
         """
         Initialize a cluster.
@@ -40,7 +34,7 @@ class Cluster(Zone):
             x_world (int, optional): x coordinate of the cluster in the world. Defaults to 0.
             y_world (int, optional): y coordinate of the cluster in the world. Defaults to 0.
             z_world (int, optional): z coordinate of the cluster in the world. Defaults to 0.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to DEFAULT_CLUSTER_SIZE.
+            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
 
         Raises:
             ValueError: If the data do not have the expected shape.

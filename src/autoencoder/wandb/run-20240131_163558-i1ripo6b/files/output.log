@@ -1,0 +1,143 @@
+
+🚀 Training AutoEncoderTrainer method for 1 epochs...
+Epochs:   0%|                                                                                                                                                                                                                                                                               | 0/1 [00:00<?, ?epoch/s]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:29<?, ?epoch/s, batch=1/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:31<?, ?epoch/s, batch=2/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:33<?, ?epoch/s, batch=3/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:35<?, ?epoch/s, batch=4/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:37<?, ?epoch/s, batch=5/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:39<?, ?epoch/s, batch=6/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:41<?, ?epoch/s, batch=7/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+>>> torch.Size([1, 1006, 48, 48, 48])
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                            | 0/1 [00:43<?, ?epoch/s, batch=8/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:47<?, ?epoch/s, batch=10/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:49<?, ?epoch/s, batch=11/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:51<?, ?epoch/s, batch=12/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:53<?, ?epoch/s, batch=13/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:55<?, ?epoch/s, batch=14/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:57<?, ?epoch/s, batch=15/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [00:59<?, ?epoch/s, batch=16/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:01<?, ?epoch/s, batch=17/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:02<?, ?epoch/s, batch=18/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:04<?, ?epoch/s, batch=19/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:07<?, ?epoch/s, batch=20/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:08<?, ?epoch/s, batch=21/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:10<?, ?epoch/s, batch=22/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:12<?, ?epoch/s, batch=23/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:14<?, ?epoch/s, batch=24/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:16<?, ?epoch/s, batch=25/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+>>> torch.Size([1, 1006, 48, 48, 48])
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:18<?, ?epoch/s, batch=26/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:22<?, ?epoch/s, batch=28/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+>>> torch.Size([1, 1006, 48, 48, 48])
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:24<?, ?epoch/s, batch=29/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:26<?, ?epoch/s, batch=30/27638, train_loss=0.0000, val_loss=0.0000]
+> torch.Size([1, 1006, 48, 48, 48])
+>> torch.Size([1, 16, 48, 48, 48])
+
+
+Epochs:   0%|                                                                                                                                                                                                                           | 0/1 [01:32<?, ?epoch/s, batch=32/27638, train_loss=0.0000, val_loss=0.0000]
+Traceback (most recent call last):
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\autoencoder_train.py", line 146, in <module>
+    statistics = trainer.train(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 162, in train
+    self._train_one_epoch(
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\trainer.py", line 293, in _train_one_epoch
+    train_loss, _, _ = self._forward_pass(batch)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\arnau\Desktop\blocksage\git\blocksage\src\autoencoder\..\..\src\trainers\autoencoder_trainer.py", line 70, in _forward_pass
+    cluster_masked = cluster_masked.to(DEVICE)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

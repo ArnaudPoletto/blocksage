@@ -383,7 +383,7 @@
     "granite_slab": [154, 98, 76],
     "granite_stairs": [154, 98, 76],
     "granite_wall": [154, 98, 76],
-    "grass": [44, 98, 25],
+    "short_grass": [44, 98, 25],
     "grass_block": [44, 84, 25],
     "gravel": [131, 126, 121],
     "gray_banner": [76, 76, 76],
