@@ -4,6 +4,7 @@ from pathlib import Path
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
+import numpy as np
 import torch.nn as nn
 from typing import List
 
@@ -11,7 +12,7 @@ from src.utils.log import log
 from src.utils.random import set_seed
 from src.utils.parser import get_config
 from src.models.autoencoder import AutoEncoder
-from src.utils.block_dictionary import get_block_id_dictionary
+from src.utils.block_dictionary import get_block_id_dictionary, get_block_class_dictionary
 from src.trainers.autoencoder_trainer import AutoEncoderTrainer
 from src.utils.segmentation_train import get_criterion, get_optimizer
 from src.config import (
@@ -116,16 +117,17 @@ if __name__ == "__main__":
     num_epochs = int(config["num_epochs"])
     with_pooling = bool(config["with_pooling"])
 
-    # Get input and output sizes
-    block_id_dict = get_block_id_dictionary()
-    input_size = len(block_id_dict) + 1 # Add 1 for masked blocks
-    output_size = input_size
 
     # Get dataloaders, model, criterion, optimizer, and trainer
+    block_id_dict = get_block_id_dictionary()
+    block_class_dict = get_block_class_dictionary()
     train_loader, test_loader, val_loader = get_dataloaders(
         block_id_dict=block_id_dict,
+        block_class_dict=block_class_dict,
         subset_fraction=DATASET_SUBSET_FRACTION
         )
+    input_size = np.unique(list(block_class_dict.values())).shape[0] + 1 # +1 for the masked block
+    output_size = input_size
     model = get_model(
         input_size = input_size,
         output_size = output_size,
@@ -136,7 +138,8 @@ if __name__ == "__main__":
     )
     criterion = get_criterion(
         criterion_name = criterion_name, 
-        block_id_dict = block_id_dict
+        block_id_dict = block_id_dict,
+        block_class_dict = block_class_dict
     )
     optimizer = get_optimizer(
         model,
