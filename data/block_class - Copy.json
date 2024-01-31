@@ -358,10 +358,50 @@
         "red_wool",
         "white_wool",
         "yellow_wool"
-    ]
-
-
-
+    ],
+"carpet": [
+        "black_carpet",
+        "blue_carpet",
+        "brown_carpet",
+        "cyan_carpet",
+        "gray_carpet",
+        "green_carpet",
+        "light_blue_carpet",
+        "light_gray_carpet",
+        "lime_carpet",
+        "magenta_carpet",
+        "orange_carpet",
+        "pink_carpet",
+        "purple_carpet",
+        "red_carpet",
+        "white_carpet",
+        "yellow_carpet"
+    ],
+    "terracotta": [
+    ],
+    "natural_stone" : [
+        "clay",
+        "coal_ore",
+        "cobblestone",
+        "bedrock"
+    ],
+    "dirt": [
+        "coarse_dirt"
+    ],
+    "decoration": [
+        "candle",
+        "campfire",
+    ],
+    "other": [
+        "cake",
+        "conduit",
+        "cobweb",
+        "beacon",
+        "beehive",
+        "candle_cake",
+        "creeper_head",
+        "creeper_walel_head",
+    ],
     "allium": [181, 50, 196],
     "amethyst_block": [135, 50, 196],
     "amethyst_cluster": [135, 50, 196],
