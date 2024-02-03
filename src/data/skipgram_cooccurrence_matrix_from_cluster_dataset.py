@@ -7,12 +7,10 @@ sys.path.append(str(GLOBAL_DIR))
 import os
 import argparse
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
-from typing import List
-from src.utils.log import log, warn
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import List, Tuple
 from multiprocessing import Pool
+from src.utils.log import log, warn
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 
@@ -27,7 +25,15 @@ from src.config import (
 )
 
 
-def parse_arguments():
+def _parse_arguments() -> Tuple[bool, int]:
+    """
+    Parse command line arguments.
+    
+    Returns:
+        tuple: Tuple containing:
+            parallelize (bool): Whether to parallelize the processing of region files. Defaults to False.
+            max_concurrent_processes (int): Maximum number of concurrent processes. Defaults to the number of CPU cores.
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--parallelize",
@@ -45,10 +51,21 @@ def parse_arguments():
     parallelize = args.parallelize
     max_concurrent_processes = args.max_concurrent_processes
 
+    if not parallelize:
+        warn(
+            "Processing cluster files without parallelization may take a long time. Consider using the --parallelize flag."
+        )
+
     return parallelize, max_concurrent_processes
 
 
-def get_cluster_file_paths() -> List[str]:
+def _get_cluster_file_paths() -> List[str]:
+    """
+    Get the paths of all cluster files in the dataset.
+
+    Returns:
+        List[str]: List of paths of all cluster files in the dataset.
+    """
     cluster_file_paths = []
     # Iterate through each cluster folder in the dataset
     for cluster_folder in os.listdir(CLUSTER_DATASET_PATH):
@@ -56,7 +73,7 @@ def get_cluster_file_paths() -> List[str]:
         if not os.path.isdir(cluster_folder_path):
             continue
 
-        # Iterate through each region file in the folder
+        # Iterate through each cluster file in the folder
         for cluster_file in os.listdir(cluster_folder_path):
             cluster_file_path = os.path.join(cluster_folder_path, cluster_file)
 
@@ -66,13 +83,26 @@ def get_cluster_file_paths() -> List[str]:
     return cluster_file_paths
 
 
-def process_cluster_file(
+def _process_cluster_file(
     cluster_file_path: str,
     vocabulary_size: int,
     section_size: int,
     cluster_size: int,
     skipgram_window_size: int,
-):
+) -> np.ndarray:
+    """
+    Process a cluster file to obtain a sub cooccurrence matrix.
+
+    Args:
+        cluster_file_path (str): Path to the cluster file.
+        vocabulary_size (int): Size of the vocabulary.
+        section_size (int): Size of the section.
+        cluster_size (int): Size of the cluster.
+        skipgram_window_size (int): Size of the skipgram window.
+
+    Returns:
+        np.ndarray: Sub cooccurrence matrix.
+    """
     # Get cluster
     cluster_data = np.load(cluster_file_path)
     cluster = Cluster(cluster_data)
@@ -130,63 +160,77 @@ def process_cluster_file(
 
     return sub_cooccurrence_matrix
 
-def process_cluster_file_imap(args):
-    return process_cluster_file(*args)
+def _process_cluster_file_imap(args) -> np.ndarray:
+    """
+    Process a cluster file to obtain a sub cooccurrence matrix.
+
+    Args:
+        args (tuple): Tuple containing:
+            cluster_file_path (str): Path to the cluster file.
+            vocabulary_size (int): Size of the vocabulary.
+            section_size (int): Size of the section.
+            cluster_size (int): Size of the cluster.
+            skipgram_window_size (int): Size of the skipgram window.
+
+    Returns:
+        np.ndarray: Sub cooccurrence matrix.
+    """
+    return _process_cluster_file(*args)
 
 
 if __name__ == "__main__":
     # Parse arguments
-    parallelize, max_concurrent_processes = parse_arguments()
-    if not parallelize:
-        warn(
-            "Processing cluster files without parallelization may take a long time. Consider using the --parallelize flag."
-        )
+    parallelize, max_concurrent_processes = _parse_arguments()
 
     # Get block id dictionary and vocabulary size
     block_id_dict = get_block_id_dictionary()
     vocabulary_size = len(block_id_dict)
 
-    with Pool(processes=max_concurrent_processes) as p:
-        cooccurrence_matrix = np.zeros(
-            (vocabulary_size, vocabulary_size), dtype=np.float32
-        )
-        cluster_file_paths = get_cluster_file_paths()
-        if parallelize:
-            # Get list of arguments for each process
-            args_list = [
-                (
-                    cluster_file_path,
-                    vocabulary_size,
-                    SECTION_SIZE,
-                    CLUSTER_SIZE,
-                    SKIPGRAM_WINDOW_SIZE,
-                )
-                for cluster_file_path in cluster_file_paths
-            ]
+    # Process cluster files
+    cooccurrence_matrix = np.zeros(
+        (vocabulary_size, vocabulary_size), dtype=np.float32
+    )
+    cluster_file_paths = _get_cluster_file_paths()
+    if parallelize:
+        p = Pool(processes=max_concurrent_processes)
 
-            # Process cluster files
-            results = p.imap_unordered(process_cluster_file_imap, args_list)
+        # Get list of arguments for each process
+        args_list = [
+            (
+                cluster_file_path,
+                vocabulary_size,
+                SECTION_SIZE,
+                CLUSTER_SIZE,
+                SKIPGRAM_WINDOW_SIZE,
+            )
+            for cluster_file_path in cluster_file_paths
+        ]
 
-            # Aggregate results
-            for result in tqdm(results, total=len(args_list), desc="🔄 Processing cluster files"):
-                cooccurrence_matrix += result 
-        else:
-            for cluster_file_path in tqdm(cluster_file_paths, desc="🔄 Processing cluster files"):
-                cooccurrence_matrix += process_cluster_file(
-                    cluster_file_path,
-                    vocabulary_size,
-                    SECTION_SIZE,
-                    CLUSTER_SIZE,
-                    SKIPGRAM_WINDOW_SIZE,
-                )
+        # Process cluster files
+        results = p.imap_unordered(_process_cluster_file_imap, args_list)
 
-        # Normalize the cooccurrence matrix
-        coocurrence_matrix_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True) # Get the number of cooccurrences for each target block
-        zero_sum_indices = np.where(coocurrence_matrix_sum == 0)[0]
-        cooccurrence_matrix[zero_sum_indices, :] = 1 / vocabulary_size # Target blocks with no cooccurrences are assigned a uniform probability
-        coocurrence_matrix_sum[coocurrence_matrix_sum == 0] = 1  # The sum of such probabilities is 1
-        cooccurrence_matrix /= coocurrence_matrix_sum
+        # Aggregate results
+        for result in tqdm(results, total=len(args_list), desc="🔄 Processing cluster files"):
+            cooccurrence_matrix += result 
 
-        # Save the cooccurrence matrix in a new file
-        np.save(SKIPGRAM_COOCCURRENCE_MATRIX_PATH, cooccurrence_matrix)
-        log(f"💾 Saved cooccurrence matrix to {SKIPGRAM_COOCCURRENCE_MATRIX_PATH}.")
+        p.close()
+    else:
+        for cluster_file_path in tqdm(cluster_file_paths, desc="🔄 Processing cluster files"):
+            cooccurrence_matrix += _process_cluster_file(
+                cluster_file_path,
+                vocabulary_size,
+                SECTION_SIZE,
+                CLUSTER_SIZE,
+                SKIPGRAM_WINDOW_SIZE,
+            )
+
+    # Normalize the cooccurrence matrix
+    coocurrence_matrix_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True) # Get the number of cooccurrences for each target block
+    zero_sum_indices = np.where(coocurrence_matrix_sum == 0)[0]
+    cooccurrence_matrix[zero_sum_indices, :] = 1 / vocabulary_size # Target blocks with no cooccurrences are assigned a uniform probability
+    coocurrence_matrix_sum[coocurrence_matrix_sum == 0] = 1  # The sum of such probabilities is 1
+    cooccurrence_matrix /= coocurrence_matrix_sum
+
+    # Save the cooccurrence matrix in a new file
+    np.save(SKIPGRAM_COOCCURRENCE_MATRIX_PATH, cooccurrence_matrix)
+    log(f"💾 Saved cooccurrence matrix to {SKIPGRAM_COOCCURRENCE_MATRIX_PATH}.")

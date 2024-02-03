@@ -5,23 +5,24 @@ GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
 import os
+import argparse
 import numpy as np
 from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor, as_completed
-import argparse
+from typing import List, Tuple
+from multiprocessing import Pool
 
 from src.utils.log import warn
 from src.data.region_from_mca import get_region
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
-    CLUSTER_SIZE, 
+    CLUSTER_SIZE,
     CLUSTER_STRIDE,
     CLUSTER_DATASET_PATH,
-    REGION_DATASET_PATH
+    REGION_DATASET_PATH,
 )
 
 
-def parse_arguments():
+def _parse_arguments() -> Tuple[int, int, bool, int]:
     """
     Parse command line arguments.
 
@@ -71,7 +72,31 @@ def parse_arguments():
     return cluster_size, cluster_stride, parallelize, max_concurrent_processes
 
 
-def process_region_file(
+def _get_region_names_and_paths() -> List[Tuple[str, str, str]]:
+    """
+    Get the paths of all region files in the dataset.
+
+    Returns:
+        List[Tuple[str, str, str]]: List of tuples containing the region folder name, region folder path, and region file name.
+    """
+    region_names_and_paths = []
+    # Iterate through each region folder in the dataset
+    for region_folder in os.listdir(REGION_DATASET_PATH):
+        region_folder_path = os.path.join(REGION_DATASET_PATH, region_folder)
+        if not os.path.isdir(region_folder_path):
+            continue
+
+        # Iterate through each region file in the folder
+        for region_file in os.listdir(region_folder_path):
+            # Add region folder name, region folder path, and region file name to region names and paths
+            region_names_and_paths.append(
+                (region_folder, region_folder_path, region_file)
+            )
+
+    return region_names_and_paths
+
+
+def _process_region_file(
     region_folder: str,
     region_folder_path: str,
     region_file: str,
@@ -79,7 +104,7 @@ def process_region_file(
     cluster_stride: int,
     block_id_dict: dict,
     parallelize: bool,
-):
+) -> None:
     """
     Process a region file.
 
@@ -106,7 +131,7 @@ def process_region_file(
     relevant_clusters = region.get_clusters(
         block_id_dict=block_id_dict,
         cluster_size=cluster_size,
-        stride=cluster_stride,
+        cluster_stride=cluster_stride,
         only_relevant=True,
     )
     relevant_cluster_data_list = [cluster.get_data() for cluster in relevant_clusters]
@@ -127,6 +152,23 @@ def process_region_file(
         np.save(cluster_file_path, relevant_cluster_data)
 
 
+def process_region_file_imap(args) -> None:
+    """
+    Process a region file using the imap_unordered method.
+
+    Args:
+        args (tuple): Tuple containing:
+            region_folder (str): Name of the region folder.
+            region_folder_path (str): Path to the region folder.
+            region_file (str): Name of the region file.
+            cluster_size (int): Size of the clusters in blocks.
+            cluster_stride (int): Stride of the clusters in blocks.
+            block_id_dict (dict): Dictionary of block states and their corresponding index.
+            parallelize (bool): Whether to parallelize the processing of region files.
+    """
+    _process_region_file(*args)
+
+
 if __name__ == "__main__":
     # Parse arguments
     (
@@ -134,50 +176,50 @@ if __name__ == "__main__":
         cluster_stride,
         parallelize,
         max_concurrent_processes,
-    ) = parse_arguments()
+    ) = _parse_arguments()
 
     # Get block id dictionary
     block_id_dict = get_block_id_dictionary()
 
-    with ProcessPoolExecutor(max_workers=max_concurrent_processes) as executor:
-        futures = []
-        region_folders = os.listdir(REGION_DATASET_PATH)
-        total_files = sum(
-            len(os.listdir(os.path.join(REGION_DATASET_PATH, region_folder)))
-            for region_folder in os.listdir(REGION_DATASET_PATH)
-        )
-        bar = tqdm(total=total_files, desc="🔄 Processing region file")
-        for region_folder in region_folders:
-            region_folder_path = os.path.join(REGION_DATASET_PATH, region_folder)
-            if not os.path.isdir(region_folder_path):
-                continue
+    # Process region files
+    region_names_and_paths = _get_region_names_and_paths()
+    bar = tqdm(total=len(region_names_and_paths), desc="🔄 Processing region files")
+    if parallelize:
+        p = Pool(processes=max_concurrent_processes)
 
-            for region_file in os.listdir(region_folder_path):
-                if parallelize:
-                    futures.append(
-                        executor.submit(
-                            process_region_file,
-                            region_folder,
-                            region_folder_path,
-                            region_file,
-                            cluster_size,
-                            cluster_stride,
-                            block_id_dict,
-                            parallelize,
-                        )
-                    )
-                else:
-                    process_region_file(
-                        region_folder,
-                        region_folder_path,
-                        region_file,
-                        cluster_size,
-                        cluster_stride,
-                        block_id_dict,
-                        parallelize,
-                    )
-                    bar.update(1)
+        # Get list of arguments for each process
+        args_list = [
+            (
+                region_folder,
+                region_folder_path,
+                region_file,
+                cluster_size,
+                cluster_stride,
+                block_id_dict,
+                parallelize,
+            )
+            for region_folder, region_folder_path, region_file in region_names_and_paths
+        ]
 
-        for future in as_completed(futures):
-            future.result()
+        # Process region files
+        results = p.imap_unordered(process_region_file_imap, args_list)
+
+        # Wait for all processes to finish
+        for _ in results:
             bar.update(1)
+
+        p.close()
+    else:
+        for region_folder, region_folder_path, region_file in region_names_and_paths:
+            _process_region_file(
+                region_folder,
+                region_folder_path,
+                region_file,
+                cluster_size,
+                cluster_stride,
+                block_id_dict,
+                parallelize,
+            )
+            bar.update(1)
+
+    bar.close()

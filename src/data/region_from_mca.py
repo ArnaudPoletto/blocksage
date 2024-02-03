@@ -1,3 +1,9 @@
+import sys
+from pathlib import Path
+
+GLOBAL_DIR = Path(__file__).parent / ".." / ".."
+sys.path.append(str(GLOBAL_DIR))
+
 import os
 import zlib
 import struct
@@ -5,7 +11,8 @@ import numpy as np
 from tqdm import tqdm
 from io import BytesIO
 from nbtlib import File
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import List, Tuple
+from multiprocessing import Pool
 
 from src.zones.region import Region
 from src.utils.log import log, warn
@@ -19,11 +26,10 @@ CHUNK_HEADER_SIZE = 5
 ZLIB_COMPRESSION_TYPE = 2
 SECTOR_COUNT_MASK = 0xFF
 
-
 TOTAL_SECTION_BLOCKS = SECTION_SIZE * SECTION_SIZE * SECTION_SIZE
 
 
-def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
+def _process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
     """
     Process a section of blocks for any bit length, using vectorized operations.
 
@@ -53,7 +59,7 @@ def process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
     ]  # Flatten and trim to the correct size (last long may be incomplete)
 
 
-def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
+def _process_chunk(nbt_data: File, block_dict: dict) -> Tuple[int, int, int, int, np.ndarray]:
     """
     Process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
@@ -73,10 +79,13 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
     chunk_z_in_region = nbt_data["zPos"] % N_CHUNKS_PER_REGION_PER_DIM
     chunk_x_in_world = nbt_data["xPos"] * SECTION_SIZE
     chunk_z_in_world = nbt_data["zPos"] * SECTION_SIZE
-    chunk_blocks = np.zeros(
-        (CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE),
-        dtype=np.uint16,
-    ) - 1  # -1 for missing sections
+    chunk_blocks = (
+        np.zeros(
+            (CHUNK_Y_SIZE // SECTION_SIZE, SECTION_SIZE, SECTION_SIZE, SECTION_SIZE),
+            dtype=np.uint16,
+        )
+        - 1
+    )  # -1 for missing sections
 
     for section in nbt_data["sections"]:
         section_palette = np.asarray(
@@ -99,7 +108,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
                 4, int(np.ceil(np.log2(len(section_palette))))
             )  # At least 4 bits, or log2 of palette size
             section_data = np.asarray(section_data, dtype=np.uint64)
-            section_block_indices = process_section(section_data, bit_length)
+            section_block_indices = _process_section(section_data, bit_length)
 
         # Convert block indices to block IDs
         section_blocks = np.vectorize(lambda x: block_dict.get(x, -1))(
@@ -108,7 +117,9 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
 
         # Warn if there are unknown blocks
         if np.any(section_blocks == -1):
-            unknown_blocks = np.unique(section_palette[section_block_indices][section_blocks == -1])
+            unknown_blocks = np.unique(
+                section_palette[section_block_indices][section_blocks == -1]
+            )
             warn(
                 f"Unknown blocks found in chunk {chunk_x_in_world}, {chunk_z_in_world}: {unknown_blocks}."
             )
@@ -127,7 +138,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> np.ndarray:
     )
 
 
-def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.ndarray:
+def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> Tuple[int, int, int, int, np.ndarray]:
     """
     Read and process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
@@ -165,10 +176,51 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> np.
     return _process_chunk(nbt_data, block_dict)
 
 
+def _read_and_process_chunk_imap(args: Tuple[BytesIO, dict]) -> Tuple[int, int, int, int, np.ndarray]:
+    """
+    Read and process a chunk of blocks using the imap_unordered method.
+
+    Args:
+        args (tuple): Tuple containing:
+            chunk_data_stream (BytesIO): Stream of the chunk data.
+            block_dict (dict): Dictionary of block states and their corresponding index.
+
+    Returns:
+        int: x coordinate of the chunk in the region.
+        int: z coordinate of the chunk in the region.
+        int: x coordinate of the chunk in the world.
+        int: z coordinate of the chunk in the world.
+        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
+    """
+    return _read_and_process_chunk(*args)
+
+
+def _get_chunk_data_stream(locations: List[int], chunk_idx: int, region_data: bytes) -> BytesIO:
+    """
+    Get the chunk data as a stream.
+
+    Args:
+        locations (List[int]): List of chunk locations.
+        chunk_idx (int): Index of the chunk.
+        region_data (bytes): Data of the region file.
+
+    Returns:
+        BytesIO: Stream of the chunk data.
+    """
+    offset = (locations[chunk_idx] >> OFFSET_SHIFT) * SECTOR_BYTES
+    sector_count = locations[chunk_idx] & SECTOR_COUNT_MASK
+    chunk_data_stream = BytesIO(
+        region_data[offset : offset + sector_count * SECTOR_BYTES]
+    )
+
+    return chunk_data_stream
+
+
 def get_region(
     file_path: str,
     block_id_dict: dict = None,
     parallelize_chunks: bool = True,
+    max_concurrent_processes: int = os.cpu_count(),
     show_bar: bool = True,
 ) -> Region:
     """
@@ -178,20 +230,16 @@ def get_region(
         file_path (str): Path to the region file.
         block_dict (dict, optional): Dictionary of block states and their corresponding index.
         parallelize_chunks (bool, optional): Whether to parallelize chunk processing. Defaults to True.
+        max_concurrent_processes (int, optional): Maximum number of concurrent processes. Defaults to the number of CPU cores.
         show_bar (bool, optional): Whether to show a progress bar. Defaults to True.
 
     Returns:
         Region: A region of blocks.
     """
+    # Get block id dictionary
     if block_id_dict is None:
         block_id_dict = get_block_id_dictionary()
 
-    # Read the region file
-    with open(file_path, "rb") as region_file:
-        region_data = region_file.read()
-    locations = struct.unpack(f">{SECTOR_BYTES // 4}I", region_data[:SECTOR_BYTES])
-
-    # Process chunks
     data = (
         np.zeros(
             (
@@ -206,79 +254,102 @@ def get_region(
         )
         - 1
     )  # -1 for missing sections
+    region_x_world = None
+    region_z_world = None
 
-    with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
-        futures = []
-        region_x_world = None
-        region_z_world = None
-        if show_bar:
-            bar = tqdm(
-                total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM,
-                desc="🔄 Processing chunk",
+    # Read the region file
+    with open(file_path, "rb") as region_file:
+        region_data = region_file.read()
+    locations = struct.unpack(f">{SECTOR_BYTES // 4}I", region_data[:SECTOR_BYTES])
+
+    if show_bar:
+        bar = tqdm(
+            total=N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM,
+            desc="🔄 Processing chunk",
+        )
+    if parallelize_chunks:
+        p = Pool(processes=max_concurrent_processes)
+
+        # Get the list of arguments for each process
+        args_list = [
+            (
+                _get_chunk_data_stream(locations, chunk_idx, region_data),
+                block_id_dict,
             )
+            for chunk_idx in range(
+                N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM
+            )
+            if locations[chunk_idx] != 0
+        ]
+
+        # Process chunks
+        results = p.imap_unordered(_read_and_process_chunk_imap, args_list)
+
+        # Update the data with the processed chunks
+        for result in results:
+            (
+                chunk_x_region,
+                chunk_z_region,
+                chunk_x_world,
+                chunk_z_world,
+                chunk_blocks,
+            ) = result
+
+            # Set the chunk data
+            data[chunk_x_region, chunk_z_region] = chunk_blocks
+
+            # Compute the region coordinates if not already computed
+            if region_x_world is None or region_z_world is None:
+                computed_region_x_world = chunk_x_world - (
+                    chunk_x_region * SECTION_SIZE
+                )
+                computed_region_z_world = chunk_z_world - (
+                    chunk_z_region * SECTION_SIZE
+                )
+                region_x_world = computed_region_x_world
+                region_z_world = computed_region_z_world
+
+            if show_bar:
+                bar.update(1)
+
+        p.close()
+    else:
         for chunk_idx in range(
             N_CHUNKS_PER_REGION_PER_DIM * N_CHUNKS_PER_REGION_PER_DIM
         ):
             if locations[chunk_idx] == 0:
-                if show_bar:
-                    bar.update(1)
                 continue
 
             # Get the chunk data as a stream
-            offset = (locations[chunk_idx] >> OFFSET_SHIFT) * SECTOR_BYTES
-            sector_count = locations[chunk_idx] & SECTOR_COUNT_MASK
-            chunk_data_stream = BytesIO(
-                region_data[offset : offset + sector_count * SECTOR_BYTES]
+            chunk_data_stream = _get_chunk_data_stream(
+                locations, chunk_idx, region_data
             )
 
-            # Process the chunk, either in parallel or sequentially
-            if parallelize_chunks:
-                futures.append(
-                    executor.submit(
-                        _read_and_process_chunk, chunk_data_stream, block_id_dict
-                    )
+            # Process the chunk
+            (
+                chunk_x_region,
+                chunk_z_region,
+                chunk_x_world,
+                chunk_z_world,
+                chunk_blocks,
+            ) = _read_and_process_chunk(chunk_data_stream, block_id_dict)
+            data[chunk_x_region, chunk_z_region] = chunk_blocks
+
+            # Compute the region coordinates if not already computed
+            if region_x_world is None or region_z_world is None:
+                computed_region_x_world = chunk_x_world - (
+                    chunk_x_region * SECTION_SIZE
                 )
-            else:
-                (
-                    chunk_x_region,
-                    chunk_z_region,
-                    chunk_x_world,
-                    chunk_z_world,
-                    chunk_blocks,
-                ) = _read_and_process_chunk(chunk_data_stream, block_id_dict)
-                data[chunk_x_region, chunk_z_region] = chunk_blocks
-                if show_bar:
-                    bar.update(1)
+                computed_region_z_world = chunk_z_world - (
+                    chunk_z_region * SECTION_SIZE
+                )
+                region_x_world = computed_region_x_world
+                region_z_world = computed_region_z_world
 
-                if region_x_world is None or region_z_world is None:
-                    computed_region_x_world = chunk_x_world - (chunk_x_region * SECTION_SIZE)
-                    computed_region_z_world = chunk_z_world - (chunk_z_region * SECTION_SIZE)
-                    region_x_world = computed_region_x_world
-                    region_z_world = computed_region_z_world
+            if show_bar:
+                bar.update(1)
 
-        # Wait for all chunks to finish processing if parallelized
-        for future in as_completed(futures):
-            try:
-                (
-                    chunk_x_region,
-                    chunk_z_region,
-                    chunk_x_world,
-                    chunk_z_world,
-                    chunk_blocks,
-                ) = future.result()
-                data[chunk_x_region, chunk_z_region] = chunk_blocks
-                if show_bar:
-                    bar.update(1)
-
-                if region_x_world is None or region_z_world is None:
-                    computed_region_x_world = chunk_x_world - (chunk_x_region * SECTION_SIZE)
-                    computed_region_z_world = chunk_z_world - (chunk_z_region * SECTION_SIZE)
-                    region_x_world = computed_region_x_world
-                    region_z_world = computed_region_z_world
-            except Exception as e:
-                log(f"❌ Error while processing chunk: {e}")
-
-        if show_bar:
-            bar.close()
+    if show_bar:
+        bar.close()
 
     return Region(data, region_x_world, region_z_world)
