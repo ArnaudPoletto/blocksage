@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.mca.zone import Zone
+from src.zones.zone import Zone
 from src.utils.log import warn
-from src.mca.section import Section
+from src.zones.section import Section
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
     AIR_NAME,

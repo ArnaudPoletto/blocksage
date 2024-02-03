@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.mca.zone import Zone
+from src.zones.zone import Zone
 from src.utils.log import warn
 from src.config import SECTION_SIZE
 

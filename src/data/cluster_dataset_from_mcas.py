@@ -11,13 +11,14 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 import argparse
 
 from src.utils.log import warn
-from src.mca.region_from_mca import get_region
+from src.data.region_from_mca import get_region
 from src.utils.block_dictionary import get_block_id_dictionary
-from src.config import CLUSTER_SIZE, CLUSTER_STRIDE
-from src.config import DATA_PATH
-
-REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
-CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
+from src.config import (
+    CLUSTER_SIZE, 
+    CLUSTER_STRIDE,
+    CLUSTER_DATASET_PATH,
+    REGION_DATASET_PATH
+)
 
 
 def parse_arguments():
@@ -57,7 +58,6 @@ def parse_arguments():
     )
     args = parser.parse_args()
 
-    # Set cluster size and stride
     cluster_size = args.cluster_size
     cluster_stride = args.cluster_stride
     parallelize = args.parallelize

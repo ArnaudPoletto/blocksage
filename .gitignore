@@ -2,6 +2,9 @@
 data/*
 *.mca
 
+# Wandb
+wandb/
+
 # Python
 __init__.py
 __pycache__

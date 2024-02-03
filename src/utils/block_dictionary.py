@@ -13,6 +13,7 @@ from src.config import DATA_PATH
 BLOCK_STATES_PATH = DATA_PATH + "blockstates/"
 BLOCK_DICT_PATH = DATA_PATH + "block_id_dict.json"
 BLOCK_COLOR_DICT_PATH = DATA_PATH + "block_color_dict.json"
+BLOCK_CLASS_DICT_PATH = DATA_PATH + "block_class_dict.json"
 
 
 def save_block_id_dictionary() -> None:
@@ -63,3 +64,23 @@ def get_block_color_dictionary() -> dict:
     )
 
     return block_color_dict
+
+
+def get_block_class_dictionary() -> dict:
+    """
+    Get a dictionary of block states and their corresponding class.
+
+    Returns:
+        dict: Dictionary of block states and their corresponding class, e.g. {'minecraft:air': 'air', 'minecraft:stone': 'solid', ...}
+    """
+    with open(BLOCK_CLASS_DICT_PATH) as f:
+        class_block_dict = json.load(f)
+
+    # Invert dictionary
+    block_class_dict = {b: c for c, blocks in class_block_dict.items() for b in blocks}
+
+    log(
+        f"✅ Loaded {len(block_class_dict)} block classes from {Path(BLOCK_CLASS_DICT_PATH).resolve()}."
+    )
+
+    return block_class_dict

@@ -121,13 +121,15 @@ if __name__ == "__main__":
     # Get dataloaders, model, criterion, optimizer, and trainer
     block_id_dict = get_block_id_dictionary()
     block_class_dict = get_block_class_dictionary()
+    input_size = np.unique(list(block_class_dict.values())).shape[0] + 1 # +1 for the masked block
+    #block_class_dict = None
+    #input_size = len(block_id_dict) + 1 # +1 for the masked block
+    output_size = input_size
     train_loader, test_loader, val_loader = get_dataloaders(
         block_id_dict=block_id_dict,
         block_class_dict=block_class_dict,
         subset_fraction=DATASET_SUBSET_FRACTION
         )
-    input_size = np.unique(list(block_class_dict.values())).shape[0] + 1 # +1 for the masked block
-    output_size = input_size
     model = get_model(
         input_size = input_size,
         output_size = output_size,

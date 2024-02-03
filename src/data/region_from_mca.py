@@ -7,7 +7,7 @@ from io import BytesIO
 from nbtlib import File
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
-from src.mca.region import Region
+from src.zones.region import Region
 from src.utils.log import log, warn
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE, MIN_Y, SECTION_SIZE

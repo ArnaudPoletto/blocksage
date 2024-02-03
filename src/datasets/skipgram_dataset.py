@@ -8,12 +8,16 @@ import os
 import torch
 import numpy as np
 from typing import Tuple
-from src.utils.log import log
-from torch.utils.data import Dataset, DataLoader
 from torch.nn.functional import one_hot
 
+from torch.utils.data import Dataset, DataLoader
+
+from src.utils.log import log
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
+    SKIPGRAM_WINDOW_SIZE, 
+    CLUSTER_SIZE, 
+    SECTION_SIZE,
     CLUSTER_DATASET_PATH,
     TRAIN_SPLIT,
     TEST_SPLIT,
@@ -23,51 +27,50 @@ from src.config import (
 )
 
 
-class ClusterDataset(Dataset):
-    """A cluster dataset."""
+class SkipGramDataset(Dataset):
+    """A skip-gram dataset."""
 
     def __init__(
         self,
         cluster_file_paths: str,
+        window_size: int = SKIPGRAM_WINDOW_SIZE,
         block_id_dict: dict = None,
-        block_class_dict: dict = None,
-    ) -> None:
+    ):
         """
-        Initialize a cluster dataset.
+        Initialize the skip-gram dataset.
 
         Args:
-            cluster_file_paths (List[str]): List of cluster file paths.
-            block_id_dict (dict, optional): Block id dictionary. Defaults to None.
-            block_class_dict (dict, optional): Block class dictionary. Defaults to None.
+            cluster_file_paths: List of cluster file paths.
+            block_id_dict: Block id dictionary. Defaults to None.
         """
-        super(ClusterDataset, self).__init__()
+        super(SkipGramDataset, self).__init__()
 
         # Get block id dictionary if not provided
         if block_id_dict is None:
             block_id_dict = get_block_id_dictionary()
 
         self.cluster_file_paths = cluster_file_paths
-        # Get class id dictionary if block class dictionary is provided
-        if block_class_dict:
-            class_ids = list(set(block_class_dict.values()))
-            self.id_class_dict = {idx: class_ids.index(block_class_dict[block]) for block, idx in block_id_dict.items()}
-        else:
-            self.id_class_dict = None
-        # The number of block classes is the number of unique block ids if no block class dictionary is provided
-        # Otherwise, it is the number of unique block classes
-        # The number of total classes is the number of block classes + 1 for the masked block
-        num_block_classes = len(block_id_dict) if block_class_dict is None else np.unique(list(block_class_dict.values())).shape[0]
-        self.num_block_classes = num_block_classes
-        self.num_total_classes = num_block_classes + 1 # +1 for the masked block
+        self.window_size = window_size
+        self.vocabulary_size = len(block_id_dict) + 1  # +1 for the masked block
+        # The number of blocks per cluster is the number of valid blocks, not considering the blocks
+        # in the borders of the cluster. The number of neighbors is the number of blocks in the window,
+        # not considering the center block.
+        self.valid_cluster_size = CLUSTER_SIZE * SECTION_SIZE - (2 * self.window_size)
+        self.total_window_size = 2 * self.window_size + 1
+        self.n_neighbors = self.total_window_size**3 - 1
 
     def __len__(self) -> int:
         """
-        Get the length of the cluster dataset.
+        Get the length of the skip-gram dataset.
 
         Returns:
-            int: Length of the cluster dataset.
+            int: Length of the skip-gram dataset.
         """
-        return len(self.cluster_file_paths)
+        return (
+            len(self.cluster_file_paths)
+            * (self.valid_cluster_size**3)
+            * self.n_neighbors
+        )
 
     @staticmethod
     def _reshape_to_3d(cluster: torch.Tensor) -> torch.Tensor:
@@ -89,63 +92,74 @@ class ClusterDataset(Dataset):
 
     def __getitem__(self, idx: int) -> torch.Tensor:
         """
-        Get a cluster from the cluster dataset.
+        Get an skip-gram sample from the skip-gram dataset.
 
         Args:
-            idx (int): The index of the cluster.
+            idx (int): Index of the item.
 
         Returns:
-            torch.Tensor: The cluster.
+            torch.Tensor: Item from the skip-gram dataset.
         """
-        # Get cluster file and load it
-        cluster_file_path = self.cluster_file_paths[idx]
-        cluster_gt = np.load(cluster_file_path)
+        # Get indices
+        n_entries_per_cluster = (self.valid_cluster_size**3) * self.n_neighbors
+        cluster_file_path_idx = idx // n_entries_per_cluster
+        entry_idx = idx % n_entries_per_cluster
+        block_idx = entry_idx // self.n_neighbors
+        block_x_idx = block_idx // (self.valid_cluster_size**2)
+        block_y_idx = (
+            block_idx % (self.valid_cluster_size**2)
+        ) // self.valid_cluster_size
+        block_z_idx = (
+            block_idx % (self.valid_cluster_size**2)
+        ) % self.valid_cluster_size
+        neighbor_idx = entry_idx % self.n_neighbors
 
-        # # Mask the center section
-        cluster_in = cluster_gt.copy()
-        # cluster_masked[
-        #     cluster_masked.shape[0] // 2,
-        #     cluster_masked.shape[1] // 2,
-        #     cluster_masked.shape[2] // 2,
-        # ] = self.num_block_classes  # Masked block are represented by the last index
+        # # Get cluster
+        # cluster_file_path = self.cluster_file_paths[cluster_file_path_idx]
+        # cluster = torch.from_numpy(np.load(cluster_file_path))
+        # cluster = SkipGramDataset._reshape_to_3d(cluster)
 
-        # Reshape tensors as 3d tensors
-        cluster_in = ClusterDataset._reshape_to_3d(cluster_in)
-        cluster_gt = ClusterDataset._reshape_to_3d(cluster_gt)
-
-        # # Only take the center section for the ground truth
-        # cluster_size = cluster_gt.shape[2] // SECTION_SIZE
-        # center_section_start = SECTION_SIZE * (cluster_size // 2)
-        # center_section_end = center_section_start + SECTION_SIZE
-        # cluster_gt = cluster_gt[
-        #     center_section_start:center_section_end,
-        #     center_section_start:center_section_end,
-        #     center_section_start:center_section_end,
+        # # Get target block
+        # target_block_id = cluster[
+        #     block_x_idx + self.window_size,
+        #     block_y_idx + self.window_size,
+        #     block_z_idx + self.window_size,
         # ]
 
-        # Get class ids if block class dictionary is provided
-        if self.id_class_dict is not None:
-            cluster_in = np.vectorize(self.id_class_dict.get)(cluster_in)
-            cluster_gt = np.vectorize(self.id_class_dict.get)(cluster_gt)
+        # # Get positive context block
+        # zone_around_block = cluster[
+        #     block_x_idx - self.window_size : block_x_idx + self.window_size + 1,
+        #     block_y_idx - self.window_size : block_y_idx + self.window_size + 1,
+        #     block_z_idx - self.window_size : block_z_idx + self.window_size + 1,
+        # ].flatten() # First, get the zone around the target block
+        # center_block_idx = (self.total_window_size**3 // 2) + 1
+        # neighbors = torch.cat(
+        #     (
+        #         zone_around_block[:center_block_idx],
+        #         zone_around_block[center_block_idx + 1 :],
+        #     )
+        # ).flatten() # Remove the target block from the zone
+        # positive_context_block_id = neighbors[neighbor_idx]
 
-        # To tensor
-        cluster_in = torch.from_numpy(cluster_in)
-        cluster_gt = torch.from_numpy(cluster_gt)
+        # # Get negative context block
+        # unique_neighbors = set(torch.unique(neighbors).tolist())
+        # negative_values = list(set(range(self.vocabulary_size)) - unique_neighbors)
+        # negative_context_block_id = np.random.choice(negative_values)
 
-        # To one hot tensors
-        cluster_in = (
-            one_hot(cluster_in.long(), self.num_total_classes)
-            .float()
-            .permute(3, 0, 1, 2)
-        )
-        cluster_gt = (
-            one_hot(cluster_gt.long(), self.num_total_classes)
-            .float()
-            .permute(3, 0, 1, 2)
-        )
+        # # Get as one-hot vectors
+        # target_block = one_hot(
+        #     torch.tensor(target_block_id), num_classes=self.vocabulary_size
+        # )
+        # positive_context_block = one_hot(
+        #     torch.tensor(positive_context_block_id), num_classes=self.vocabulary_size
+        # )
+        # negative_context_block = one_hot(
+        #     torch.tensor(negative_context_block_id), num_classes=self.vocabulary_size
+        # )
 
-        return cluster_in, cluster_gt
-
+        return 1
+        #return target_block, positive_context_block, negative_context_block
+    
 
 def _load_cluster_file_paths(
     cluster_dataset: str,
@@ -237,13 +251,13 @@ def _split_cluster_file_paths(
 
 def get_dataloaders(
     cluster_dataset: str = CLUSTER_DATASET_PATH,
+    window_size: int = SKIPGRAM_WINDOW_SIZE,
     batch_size: int = BATCH_SIZE,
     num_workers: int = NUM_WORKERS,
     train_split: float = TRAIN_SPLIT,
     test_split: float = TEST_SPLIT,
     val_split: float = VAL_SPLIT,
     block_id_dict: dict = None,
-    block_class_dict: dict = None,
     subset_fraction: float = 1.0,
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
@@ -251,13 +265,13 @@ def get_dataloaders(
 
     Args:
         cluster_dataset (str, optional): Path to the cluster dataset. Defaults to CLUSTER_DATASET_PATH.
+        window_size (int, optional): Window size. Defaults to SKIPGRAM_WINDOW_SIZE.
         batch_size (int, optional): Batch size. Defaults to BATCH_SIZE.
         num_workers (int, optional): Number of workers. Defaults to NUM_WORKERS.
         train_split (float, optional): Train split. Defaults to TRAIN_SPLIT.
         test_split (float, optional): Test split. Defaults to TEST_SPLIT.
         val_split (float, optional): Validation split. Defaults to VAL_SPLIT.
         block_id_dict (dict, optional): Block id dictionary. Defaults to None.
-        block_class_dict (dict, optional): Block class dictionary. Defaults to None.
         subset_fraction (float, optional): Fraction of the dataset to use. Defaults to 1.0.
 
 
@@ -287,20 +301,20 @@ def get_dataloaders(
     # Get datasets
     if block_id_dict is None:
         block_id_dict = get_block_id_dictionary()
-    train_dataset = ClusterDataset(
+    train_dataset = SkipGramDataset(
         train_cluster_file_paths,
         block_id_dict = block_id_dict,
-        block_class_dict = block_class_dict,
+        window_size = window_size,
     )
-    test_dataset = ClusterDataset(
+    test_dataset = SkipGramDataset(
         test_cluster_file_paths,
         block_id_dict = block_id_dict,
-        block_class_dict = block_class_dict,
+        window_size = window_size,
     )
-    val_dataset = ClusterDataset(
+    val_dataset = SkipGramDataset(
         val_cluster_file_paths,
         block_id_dict = block_id_dict,
-        block_class_dict = block_class_dict,
+        window_size = window_size,
     )
 
     # Get dataloaders

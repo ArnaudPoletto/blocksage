@@ -1,10 +1,10 @@
 import numpy as np
 from typing import Generator
 
-from src.mca.zone import Zone
-from src.mca.chunk import Chunk
-from src.mca.cluster import Cluster
-from src.mca.section import Section
+from src.zones.zone import Zone
+from src.zones.chunk import Chunk
+from src.zones.cluster import Cluster
+from src.zones.section import Section
 from src.utils.log import warn
 from src.config import (
     MIN_Y,

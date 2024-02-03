@@ -11,7 +11,10 @@ PRODUCTION = False
 
 # Paths
 DATA_PATH = str(GLOBAL_DIR / "data") + "/"
+REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
 CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
+SKIPGRAM_DATASET_PATH = f"{DATA_PATH}skipgram_dataset/"
+SKIPGRAM_COOCCURRENCE_MATRIX_PATH = f"{DATA_PATH}skipgram_cooccurrence_matrix.npy"
 
 # Random
 SEED = 42
@@ -48,6 +51,7 @@ BATCH_SIZE = 2
 NUM_WORKERS = 0
 
 # Model
+SKIPGRAM_WINDOW_SIZE = 2
 ENCODER_CONV_CHANNELS = [512, 128, 32]
 DECODER_CONV_CHANNELS = [32, 128, 512]
 

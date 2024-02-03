@@ -1,7 +1,7 @@
 import numpy as np
 
-from src.mca.zone import Zone
-from src.mca.section import Section
+from src.zones.zone import Zone
+from src.zones.section import Section
 from src.config import SECTION_SIZE, MAX_N_SECTIONS_PER_CLUSTER_PER_DIM, MIN_Y
 from src.utils.log import warn
 
