@@ -5,6 +5,8 @@ GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
 import os
+import gzip
+import pickle
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -104,7 +106,8 @@ def _process_cluster_file(
         np.ndarray: Sub cooccurrence matrix.
     """
     # Get cluster
-    cluster_data = np.load(cluster_file_path)
+    with gzip.open(cluster_file_path, "rb") as f:
+        cluster_data = pickle.load(f)
     cluster = Cluster(cluster_data)
     cluster_data = cluster.get_data_by_cluster()
 
@@ -233,4 +236,4 @@ if __name__ == "__main__":
 
     # Save the cooccurrence matrix in a new file
     np.save(SKIPGRAM_COOCCURRENCE_MATRIX_PATH, cooccurrence_matrix)
-    log(f"💾 Saved cooccurrence matrix to {SKIPGRAM_COOCCURRENCE_MATRIX_PATH}.")
+    log(f"💾 Saved cooccurrence matrix to {Path(SKIPGRAM_COOCCURRENCE_MATRIX_PATH).resolve()}")

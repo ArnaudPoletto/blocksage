@@ -5,6 +5,8 @@ GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
 import os
+import gzip
+import pickle
 import argparse
 import numpy as np
 from tqdm import tqdm
@@ -142,17 +144,18 @@ def _process_region_file(
         cluster_file_path = os.path.join(
             CLUSTER_DATASET_PATH,
             region_folder,
-            f'{region_file.replace(".mca", "")}_{i}.npy',
+            f'{region_file.replace(".mca", "")}_{i}.pkl.gz',
         )
 
         # Create the directory if it doesn't exist
         os.makedirs(os.path.dirname(cluster_file_path), exist_ok=True)
 
         # Save the cluster data
-        np.save(cluster_file_path, relevant_cluster_data)
+        with gzip.open(cluster_file_path, "wb") as f:
+            pickle.dump(relevant_cluster_data, f)
 
 
-def process_region_file_imap(args) -> None:
+def _process_region_file_imap(args) -> None:
     """
     Process a region file using the imap_unordered method.
 
@@ -202,7 +205,7 @@ if __name__ == "__main__":
         ]
 
         # Process region files
-        results = p.imap_unordered(process_region_file_imap, args_list)
+        results = p.imap_unordered(_process_region_file_imap, args_list)
 
         # Wait for all processes to finish
         for _ in results:
