@@ -2,7 +2,7 @@ import numpy as np
 
 from src.zones.zone import Zone
 from src.zones.section import Section
-from src.config import SECTION_SIZE, MAX_N_SECTIONS_PER_CLUSTER_PER_DIM, MIN_Y
+from src.config import SECTION_SIZE, N_SECTIONS_PER_CLUSTER_PER_DIM, MIN_Y
 from src.utils.log import warn
 
 
@@ -28,18 +28,18 @@ class Chunk(Zone):
                 f"❌ chunk_blocks must be of shape (section, section_y, section_z, section_x), not {data.shape}."
             )
         if (
-            data.shape[0] != MAX_N_SECTIONS_PER_CLUSTER_PER_DIM
+            data.shape[0] != N_SECTIONS_PER_CLUSTER_PER_DIM
             or data.shape[1] != SECTION_SIZE
             or data.shape[2] != SECTION_SIZE
             or data.shape[3] != SECTION_SIZE
         ):
             warn(
-                f"The region data do not fit the expected shape (section, section_y, section_z, section_x) = ({MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
+                f"The region data do not fit the expected shape (section, section_y, section_z, section_x) = ({N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
 
         super().__init__(data, x_world, MIN_Y, z_world)
 
-    def get_data_for_display(self) -> np.ndarray:
+    def _get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_chunk()
 
     def get_section(self, y: int) -> Section:

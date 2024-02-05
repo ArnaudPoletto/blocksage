@@ -1,26 +1,24 @@
 import os
 import time
 import wandb
-import numpy as np
-from tqdm import tqdm
-from typing import Tuple
-from abc import ABC, abstractmethod
-
-
 import torch
+import numpy as np
+import pandas as pd
 from torch import nn
+from tqdm import tqdm
+from typing import Tuple, Dict
 from torch.optim import Optimizer
+from abc import ABC, abstractmethod
 from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
-from src.utils.log import log
 
-import pandas as pd
-
-from src.config import WANDB_PROJECT_NAME
-
-RESULTS_FOLDER_PATH = "../../data/results/"
-SAVE_STATS_PATH = f"{RESULTS_FOLDER_PATH}results.csv"
-DATASET_NAME = "Minecraft Generated Worlds"
+from src.utils.log import log, warn
+from src.config import (
+    WANDB_PROJECT_NAME,
+    TRAINER_RESULTS_FOLDER_PATH,
+    TRAINER_RESULTS_FILE_PATH,
+    WANDB_DATASET_NAME,
+)
 
 
 class Trainer(ABC):
@@ -50,11 +48,20 @@ class Trainer(ABC):
             use_scaler (bool, optional): Whether to use scaler. Defaults to False.
             name (str, optional): Name of the model. Defaults to the empty string.
 
-        Throws:
-            ValueError: If accumulation_steps is not a positive integer
+        Raises:
+            ValueError: If accumulation_steps is not a positive integer.
+            ValueError: If evaluation_steps is not a positive integer.
         """
+        super().__init__()
+
         if accumulation_steps <= 0:
-            raise ValueError("❌ Accumulation steps must be a positive integer")
+            raise ValueError("❌ Accumulation steps must be a positive integer.")
+
+        if evaluation_steps <= 0:
+            raise ValueError("❌ Evaluation steps must be a positive integer.")
+
+        if not use_scaler:
+            warn("Using scaler is recommended for better performance.")
 
         self.model = model
         self.criterion = criterion
@@ -93,7 +100,7 @@ class Trainer(ABC):
         learning_rate: int = 0,
         save_model: bool = True,
         sweeping: bool = False,
-    ) -> dict:
+    ) -> Dict:
         """
         Train the model.
 
@@ -102,18 +109,21 @@ class Trainer(ABC):
             val_loader (DataLoader): Validation data loader.
             optimizer (Optimizer): Optimizer to use during training.
             num_epochs (int): Number of epochs to train.
-            learning_rate (int, optional): Learning rate to use, defaults to 0.
+            learning_rate (int, optional): Learning rate to use. Defaults to 0.
             save_model (bool, optional): Whether to save the best model. Defaults to True.
             sweeping (bool, optional): Whether the training is part of a sweeping. Defaults to False.
 
-        Throws:
+        Raises:
             ValueError: If num_epochs is not a positive integer.
 
         Returns:
-            dict: Statistics of the training.
+            Dict: Statistics of the training.
         """
         if num_epochs <= 0:
-            raise ValueError("❌ num_epochs must be a positive integer")
+            raise ValueError("❌ num_epochs must be a positive integer.")
+
+        if not save_model:
+            warn("The trained model will not be saved.")
 
         name = self._get_name(optimizer, num_epochs, learning_rate)
 
@@ -134,7 +144,7 @@ class Trainer(ABC):
                 config={
                     "architecture": self.__class__.__name__,
                     "name": name,
-                    "dataset": DATASET_NAME,
+                    "dataset": WANDB_DATASET_NAME,
                     "epochs": num_epochs,
                     "learning_rate": learning_rate,
                 },
@@ -182,7 +192,7 @@ class Trainer(ABC):
         train_loader: DataLoader,
         val_loader: DataLoader,
         test_loader: DataLoader,
-    ) -> dict:
+    ) -> Dict:
         """
         Test the model.
 
@@ -193,7 +203,7 @@ class Trainer(ABC):
             test_loader (DataLoader): Test data loader.
 
         Returns:
-            dict: Statistics of the testing.
+            Dict: Statistics of the testing.
         """
         # Load model
         self.model.load_state_dict(torch.load(model_path))
@@ -213,6 +223,9 @@ class Trainer(ABC):
         ]:
             stats = self._evaluate(loader, show_time=True)
             for metric in metrics:
+                if metric not in stats:
+                    continue
+
                 col_name = f"{name}_{metric}"
 
                 # Print results
@@ -230,14 +243,14 @@ class Trainer(ABC):
                     results.loc[0, col_name] = rf"${number}$"  # LaTeX format
 
         # Create the folder if it does not exist
-        os.makedirs(RESULTS_FOLDER_PATH, exist_ok=True)
+        os.makedirs(TRAINER_RESULTS_FOLDER_PATH, exist_ok=True)
 
         # Save the results to a csv file
-        if not os.path.isfile(SAVE_STATS_PATH):
-            results.to_csv(SAVE_STATS_PATH, index=False, sep="&")
+        if not os.path.isfile(TRAINER_RESULTS_FILE_PATH):
+            results.to_csv(TRAINER_RESULTS_FILE_PATH, index=False, sep="&")
         else:
             results.to_csv(
-                SAVE_STATS_PATH, mode="a", header=False, index=False, sep="&"
+                TRAINER_RESULTS_FILE_PATH, mode="a", header=False, index=False, sep="&"
             )
 
         return stats
@@ -256,9 +269,9 @@ class Trainer(ABC):
             NotImplementedError: If not implemented by child class.
 
         Returns:
-            train_loss (torch.Tensor): The loss of the batch
-            pred (torch.Tensor): The prediction of the batch
-            target (torch.Tensor): The target of the batch
+            train_loss (torch.Tensor): The loss of the batch.
+            pred (torch.Tensor): The prediction of the batch.
+            target (torch.Tensor): The target of the batch.
         """
         raise NotImplementedError
 
@@ -267,7 +280,7 @@ class Trainer(ABC):
         train_loader: DataLoader,
         val_loader: DataLoader,
         optimizer: Optimizer,
-        statistics: dict,
+        statistics: Dict,
         scaler: GradScaler,
         save_path: str = None,
         bar: tqdm = None,
@@ -276,13 +289,13 @@ class Trainer(ABC):
         Train the model for one epoch.
 
         Args:
-            train_loader (DataLoader): The training data loader
-            val_loader (DataLoader): The validation data loader
-            optimizer (Optimizer): The optimizer to use during training
-            statistics (dict): The statistics of the training
-            scaler (GradScaler): The scaler to use
-            save_path (str, optional): The path to save the best model, defaults to None
-            bar (tqdm, optional): The progress bar to use, efaults to None
+            train_loader (DataLoader): The training data loader.
+            val_loader (DataLoader): The validation data loader.
+            optimizer (Optimizer): The optimizer to use during training.
+            statistics (Dict): The statistics of the training.
+            scaler (GradScaler): The scaler to use.
+            save_path (str, optional): The path to save the best model. Defaults to None.
+            bar (tqdm, optional): The progress bar to use. Defaults to None.
         """
         self.model.train()
 
@@ -337,7 +350,8 @@ class Trainer(ABC):
                     self.best_eval_val_loss = self.eval_val_loss
 
                 # Log statistics
-                statistics["val_acc"].append(stats["accuracy"])
+                if "accuracy" in stats:
+                    statistics["val_acc"].append(stats["accuracy"])
 
                 if bar is None and self.print_statistics:
                     print(
@@ -351,28 +365,25 @@ class Trainer(ABC):
                             "val_loss": f"{self.eval_val_loss:.4f}",
                         }
                     )
-                wandb.log(
-                    {
-                        "train_loss": self.eval_train_loss,
-                        "val_loss": self.eval_val_loss,
-                        "val_acc": stats["accuracy"],
-                    }
-                )
+                wandb_log = {
+                    "train_loss": self.eval_train_loss,
+                    "val_loss": self.eval_val_loss,
+                }
+                if "accuracy" in stats:
+                    wandb_log["val_acc"] = stats["accuracy"]
+                wandb.log(wandb_log)
 
     def _evaluate(
-        self, 
-        loader: DataLoader, 
-        bar: tqdm = None,
-        show_time: bool = False
-    ) -> dict[str, float]:
+        self, loader: DataLoader, bar: tqdm = None, show_time: bool = False
+    ) -> Dict[str, float]:
         """
         Evaluate the model on the given loader.
 
         Args:
-            loader (DataLoader): The loader to evaluate on
+            loader (DataLoader): The loader to evaluate on.
 
         Returns:
-            dict[str, float]: The evaluation statistics. The evaluation statistics contain:
+            Dict[str, float]: The evaluation statistics, which contain:
                 - the validation loss
                 - the accuracy
         """
@@ -388,8 +399,9 @@ class Trainer(ABC):
                 val_loss, pred, target = self._forward_pass(batch)
                 total_val_loss += val_loss.item()
 
-                correct += (pred == target).sum().item()
-                total += torch.numel(pred)
+                if pred is not None and target is not None:
+                    correct += (pred == target).sum().item()
+                    total += torch.numel(pred)
 
                 if bar is not None:
                     bar.set_postfix(
@@ -401,13 +413,15 @@ class Trainer(ABC):
             if show_time:
                 print(f"⏲️ Time taken for evaluation: {time.time() - start_time:.4f}s")
 
-        acc = correct / total
-
+        # Get statistics
         total_val_loss /= len(loader)
-
         stats = {
             "loss": total_val_loss,
-            "accuracy": acc,
         }
+
+        # Other statistics if available
+        if pred is not None and target is not None:
+            acc = correct / total
+            stats["accuracy"] = acc
 
         return stats

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Generator
+from typing import Generator, Dict
 
 from src.zones.zone import Zone
 from src.zones.chunk import Chunk
@@ -12,7 +12,7 @@ from src.config import (
     CHUNK_XZ_SIZE,
     CLUSTER_SIZE,
     CLUSTER_STRIDE,
-    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    N_SECTIONS_PER_CLUSTER_PER_DIM,
     N_CHUNKS_PER_REGION_PER_DIM,
 )
 
@@ -41,18 +41,18 @@ class Region(Zone):
         if (
             data.shape[0] != N_CHUNKS_PER_REGION_PER_DIM
             or data.shape[1] != N_CHUNKS_PER_REGION_PER_DIM
-            or data.shape[2] != MAX_N_SECTIONS_PER_CLUSTER_PER_DIM
+            or data.shape[2] != N_SECTIONS_PER_CLUSTER_PER_DIM
             or data.shape[3] != SECTION_SIZE
             or data.shape[4] != SECTION_SIZE
             or data.shape[5] != SECTION_SIZE
         ):
             warn(
-                f"The region data do not fit the expected shape (region_x, region_z, section, section_y, section_z, section_x) = ({N_CHUNKS_PER_REGION_PER_DIM}, {N_CHUNKS_PER_REGION_PER_DIM}, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
+                f"The region data do not fit the expected shape (region_x, region_z, section, section_y, section_z, section_x) = ({N_CHUNKS_PER_REGION_PER_DIM}, {N_CHUNKS_PER_REGION_PER_DIM}, {N_SECTIONS_PER_CLUSTER_PER_DIM}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
 
         super().__init__(data, x_world, MIN_Y, z_world)
 
-    def get_data_for_display(self) -> np.ndarray:
+    def _get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_region()
 
     def get_chunk(self, x: int, z: int) -> Chunk:
@@ -101,9 +101,9 @@ class Region(Zone):
         Returns:
             np.ndarray: Cluster of blocks.
         """
-        if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
+        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(
-                f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
+                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
             )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
@@ -189,40 +189,42 @@ class Region(Zone):
 
     def get_clusters(
         self,
-        block_id_dict: dict = None,
+        block_id_dict: Dict[str, int] = None,
         cluster_size: int = CLUSTER_SIZE,
-        stride: int = CLUSTER_STRIDE,
+        cluster_stride: int = CLUSTER_STRIDE,
         only_relevant: bool = True,
     ) -> Generator[Cluster, None, None]:
         """
         Get a generator of clusters of blocks.
 
         Args:
-            block_id_dict (dict, optional): Dictionary of block IDs. Defaults to None.
+            block_id_dict (Dict[str, int], optional): Dictionary of block IDs. Defaults to None.
             cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
-            stride (int, optional): Stride between clusters. Defaults to CLUSTER_STRIDE.
+            cluster_stride (int, optional): Stride between clusters. Defaults to CLUSTER_STRIDE.
             only_relevant (bool, optional): Whether to only return relevant clusters. Defaults to True.
 
         Raises:
             ValueError: If the cluster_size is out of bounds, or even.
-            ValueError: If the stride is out of bounds.
+            ValueError: If the cluster_stride is out of bounds.
 
         Returns:
             Generator[Cluster]: Clusters of blocks.
         """
-        if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
+        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(
-                f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
+                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
             )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
-        if stride < 1 or stride > cluster_size:
-            raise ValueError(f"❌ stride must be in [1, {cluster_size}], not {stride}.")
+        if cluster_stride < 1 or cluster_stride > cluster_size:
+            raise ValueError(
+                f"❌ stride must be in [1, {cluster_size}], not {cluster_stride}."
+            )
 
         region_x, region_z, section, _, _, _ = self.data.shape
-        for x in range(0, region_x - cluster_size + 1, stride):
-            for z in range(0, region_z - cluster_size + 1, stride):
-                for y in range(0, section - cluster_size + 1, stride):
+        for x in range(0, region_x - cluster_size + 1, cluster_stride):
+            for z in range(0, region_z - cluster_size + 1, cluster_stride):
+                for y in range(0, section - cluster_size + 1, cluster_stride):
                     data = self.data[
                         x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
                     ]
@@ -230,7 +232,7 @@ class Region(Zone):
                     y_world = self.y_world + y * SECTION_SIZE
                     z_world = self.z_world + z * SECTION_SIZE
                     cluster = Cluster(data, x_world, y_world, z_world, cluster_size)
-                    
+
                     if only_relevant and not cluster.is_relevant(block_id_dict):
                         continue
 

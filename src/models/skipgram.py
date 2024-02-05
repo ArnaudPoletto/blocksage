@@ -2,51 +2,112 @@
 
 import torch
 import torch.nn as nn
+from pathlib import Path
 import torch.nn.functional as F
+
+from src.utils.log import log
+
 
 class SkipGram(nn.Module):
     """Skip-gram model."""
 
-    def initialize_embeddings(self):
+    def _initialize_embeddings(self) -> None:
+        """
+        Initialize the embeddings.
+        """
         initialization_range = 0.5 / self.embedding_dimension
-        self.u_embeddings.weight.data.uniform_(-initialization_range, initialization_range)
-        self.v_embeddings.weight.data.uniform_(-0, 0)
+        self.target_embeddings.weight.data.uniform_(
+            -initialization_range, initialization_range
+        )
+        self.context_embeddings.weight.data.uniform_(-0, 0)
 
     def __init__(
-            self,
-            vocabulary_size: int,
-            embedding_dimension: int,
-    ):
-        super(SkipGram, self).__init__()
-        self.u_embeddings = nn.Embedding(vocabulary_size, embedding_dimension, sparse=True)
-        self.v_embeddings = nn.Embedding(vocabulary_size, embedding_dimension, sparse=True)
-        self.embedding_dimension = embedding_dimension
-        
-        self.initialize_embeddings()
+        self,
+        vocabulary_size: int,
+        embedding_dimension: int,
+    ) -> None:
+        """
+        Initialize the skip-gram model.
 
-    def forward(self, u_positive, v_positive, v_negative, batch_size):
+        Args:
+            vocabulary_size (int): Vocabulary size.
+            embedding_dimension (int): Embedding dimension.
+        """
+        super().__init__()
+
+        self.vocabulary_size = vocabulary_size
+        self.embedding_dimension = embedding_dimension
+
+        self.target_embeddings = nn.Embedding(
+            vocabulary_size, embedding_dimension
+        )
+        self.context_embeddings = nn.Embedding(
+            vocabulary_size, embedding_dimension
+        )
+
+        self._initialize_embeddings()
+
+    def forward(
+        self,
+        target_block: torch.Tensor,
+        positive_context_block: torch.Tensor,
+        negative_context_blocks: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Forward pass.
+
+        Args:
+            target_block (torch.Tensor): Representation of the target block as block id. The tensor has shape (batch_size).
+            positive_context_block (torch.Tensor): Representation of the positive context block as block id. The tensor has shape (batch_size).
+            negative_context_blocks (torch.Tensor): Representation of the set of negative context blocks as block id. The tensor has shape (batch_size, num_negative_samples).
+
+        Returns:
+            torch.Tensor: Loss, defined as the sum of positive and negative log likelihoods.
+        """
+        batch_size = target_block.size(0)
+
         # Compute embeddings
-        u_positive_embeddings = self.u_embeddings(u_positive)
-        v_positive_embeddings = self.v_embeddings(v_positive)
-        v_negative_embeddings = self.v_embeddings(v_negative)
+        target_block_embeddings = self.target_embeddings(target_block)
+        positive_context_block_embeddings = self.context_embeddings(positive_context_block)
+        negative_context_blocks_embeddings = self.context_embeddings(negative_context_blocks)
 
         # Get positive score
-        positive_score = torch.mul(u_positive_embeddings, v_positive_embeddings)
+        positive_score = torch.mul(
+            target_block_embeddings, positive_context_block_embeddings
+        )
         positive_score = torch.sum(positive_score, dim=1)
         positive_target = F.logsigmoid(positive_score).squeeze()
 
         # Get negative score
-        negative_score = torch.bmm(v_negative_embeddings, u_positive_embeddings.unsqueeze(2)).squeeze()
+        negative_score = torch.bmm(
+            negative_context_blocks_embeddings, target_block_embeddings.unsqueeze(2)
+        ).squeeze()
         negative_score = torch.sum(negative_score, dim=1)
-        negative_target = F.logsigmoid(-negative_score).squeeze() # Negative samples have negative labels
+        negative_target = F.logsigmoid(
+            -negative_score
+        ).squeeze()  # Negative samples have negative labels
 
         # Compute loss as the sum of positive and negative log likelihoods
         loss = positive_target + negative_target
+        loss = -loss.sum() / batch_size
 
-        return -loss.sum() / batch_size
-    
-    def get_input_embeddings(self):
+        return loss
+
+    def get_input_embeddings(self) -> torch.Tensor:
+        """
+        Get input embeddings.
+
+        Returns:
+            torch.Tensor: Input embeddings.
+        """
         return self.u_embeddings.weight.data.cpu().numpy()
-    
-    def save_input_embeddings(self, path):
+
+    def save_input_embeddings(self, path) -> None:
+        """
+        Save input embeddings.
+
+        Args:
+            path (str): Path to save input embeddings.
+        """
         torch.save(self.get_input_embeddings(), path)
+        log(f"💾 Saved input embeddings to {Path(path).resolve()}")

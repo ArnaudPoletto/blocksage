@@ -8,7 +8,7 @@ def set_seed(seed: int) -> None:
     Set the random seed for all relevant packages.
 
     Args:
-        seed (int): The seed to use
+        seed (int): The seed to use.
     """
     random.seed(seed)
     np.random.seed(seed)

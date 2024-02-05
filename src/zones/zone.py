@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple
+from typing import List, Tuple, Dict
 from abc import abstractmethod
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -56,7 +56,7 @@ class Zone:
         return self.x_world, self.y_world, self.z_world
 
     @abstractmethod
-    def get_data_for_display(self) -> np.ndarray:
+    def _get_data_for_display(self) -> np.ndarray:
         """
         Get the data of the zone with the view applied, for display purposes.
         """
@@ -73,17 +73,19 @@ class Zone:
 
     @staticmethod
     def _get_first_non_air_rgb(
-        zone: np.ndarray, block_id_dict: dict, id_color_dict: dict
+        zone: np.ndarray,
+        block_id_dict: Dict[str, int],
+        id_color_dict: Dict[int, List[int]],
     ) -> np.ndarray:
         """
-        Get the rgb values of the first non-air block in each slice of the zone. The slice is computed over the second axis of 
+        Get the rgb values of the first non-air block in each slice of the zone. The slice is computed over the second axis of
         the array representing the zone, i.e. for an array of shape (x, y, z), the final array will have shape (x, z, 3), where
         the last axis contains the rgb values.
 
         Args:
             zone (np.ndarray): Array of block indices.
-            block_id_dict (dict): Dictionary mapping block names to block ids.
-            id_color_dict (dict): Dictionary mapping block ids to rgb values.
+            block_id_dict (Dict[str, int]): Dictionary mapping block names to block ids.
+            id_color_dict (Dict[int, List[int]]): Dictionary mapping block ids to rgb values.
 
         Raises:
             ValueError: If the zone is not of shape (x, y, z).
@@ -92,10 +94,8 @@ class Zone:
             np.ndarray: Array of rgb values of the first non-air block in each slice of the zone.
         """
         if len(zone.shape) != 3:
-            raise ValueError(
-                f"❌ zone must be of shape (x, y, z), not {zone.shape}."
-            )
-        
+            raise ValueError(f"❌ zone must be of shape (x, y, z), not {zone.shape}.")
+
         # Get the first non-air block for each xz slice
         air_block_id = block_id_dict[AIR_NAME]
         cave_air_block_id = block_id_dict[CAVE_AIR_NAME]
@@ -136,14 +136,16 @@ class Zone:
         return first_non_air_rgb
 
     def display(
-        self, block_id_dict: dict = None, block_color_dict: dict = None
+        self,
+        block_id_dict: Dict[str, int] = None,
+        block_color_dict: Dict[str, List[int]] = None,
     ) -> None:
         """
         Display the region of blocks.
 
         Args:
-            block_id_dict (dict, optional): Dictionary mapping block names to block ids. Defaults to None.
-            block_color_dict (dict, optional): Dictionary mapping block names to rgb values. Defaults to None.
+            block_id_dict (Dict[str, int], optional): Dictionary mapping block names to block ids. Defaults to None.
+            block_color_dict (Dict[str, List[int]], optional): Dictionary mapping block names to rgb values. Defaults to None.
         """
         # Get dictionaries if not specified
         if block_id_dict is None:
@@ -158,19 +160,19 @@ class Zone:
         }
 
         # XZ view
-        zone_xz = self.get_data_for_display()
+        zone_xz = self._get_data_for_display()
         first_non_air_rgb_xz = Zone._get_first_non_air_rgb(
             zone_xz, block_id_dict, id_color_dict
         )
 
         # XY view
-        zone_xy = self.get_data_for_display().transpose((0, 2, 1))
+        zone_xy = self._get_data_for_display().transpose((0, 2, 1))
         first_non_air_rgb_xy = Zone._get_first_non_air_rgb(
             zone_xy, block_id_dict, id_color_dict
         )
 
         # ZY view
-        zone_zy = self.get_data_for_display().transpose((2, 0, 1))
+        zone_zy = self._get_data_for_display().transpose((2, 0, 1))
         first_non_air_rgb_zy = Zone._get_first_non_air_rgb(
             zone_zy, block_id_dict, id_color_dict
         )
@@ -230,6 +232,6 @@ class Zone:
             rotation=0,
         )
 
-        # Adjust layout
+        # Adjust layout and show
         plt.tight_layout()
         plt.show()

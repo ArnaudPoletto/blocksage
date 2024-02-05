@@ -8,13 +8,7 @@ import torch
 
 # Production vs development
 PRODUCTION = False
-
-# Paths
-DATA_PATH = str(GLOBAL_DIR / "data") + "/"
-REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
-CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
-SKIPGRAM_DATASET_PATH = f"{DATA_PATH}skipgram_dataset/"
-SKIPGRAM_COOCCURRENCE_MATRIX_PATH = f"{DATA_PATH}skipgram_cooccurrence_matrix.npy"
+PRINT_LOGS = PRODUCTION == False
 
 # Random
 SEED = 42
@@ -22,38 +16,44 @@ SEED = 42
 # Torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# Log
-PRINT_LOGS = PRODUCTION == False
-
 # Wandb
 WANDB_PROJECT_NAME = "blocksage"
+WANDB_DATASET_NAME = "Minecraft Generated Worlds"
+
+# Paths
+DATA_PATH = str(GLOBAL_DIR / "data") + "/"
+CONFIG_PATH = str(GLOBAL_DIR / "config") + "/"
+REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
+CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
+SKIPGRAM_DATASET_PATH = f"{DATA_PATH}skipgram_dataset/"
+BLOCK_STATES_PATH = f"{DATA_PATH}blockstates/"
+BLOCK_ID_DICT_PATH = f"{DATA_PATH}block_id_dict.json"
+BLOCK_COLOR_DICT_PATH = f"{DATA_PATH}block_color_dict.json"
+TRAINER_RESULTS_FOLDER_PATH = f"{DATA_PATH}results/"
+TRAINER_RESULTS_FILE_PATH = f"{TRAINER_RESULTS_FOLDER_PATH}results.csv"
+SKIPGRAM_COOCCURRENCE_MATRIX_PATH = f"{DATA_PATH}skipgram_cooccurrence_matrix.npy"
+SKIPGRAM_CONFIG_PATH = f"{CONFIG_PATH}skipgram_best_params.yml"
 
 # MCA file
 SECTION_SIZE = 16
-
 MIN_Y = -64
 MAX_Y = 320
 CHUNK_Y_SIZE = MAX_Y - MIN_Y
 CHUNK_XZ_SIZE = 16
-
 CLUSTER_SIZE = 3
 CLUSTER_STRIDE = 1
-MAX_N_SECTIONS_PER_CLUSTER_PER_DIM = CHUNK_Y_SIZE // SECTION_SIZE
-
+N_SECTIONS_PER_CLUSTER_PER_DIM = CHUNK_Y_SIZE // SECTION_SIZE
 N_CHUNKS_PER_REGION_PER_DIM = 32
 
 # Dataset and dataloader
-DATASET_SUBSET_FRACTION = 1.0 if PRODUCTION else 0.01
-TRAIN_SPLIT = 0.9
-VAL_SPLIT = 0.05
-TEST_SPLIT = 0.05
-BATCH_SIZE = 2
 NUM_WORKERS = 0
 
-# Model
+# Skipgram
+SKIPGRAM_NAME = "skipgram"
 SKIPGRAM_WINDOW_SIZE = 2
-ENCODER_CONV_CHANNELS = [512, 128, 32]
-DECODER_CONV_CHANNELS = [32, 128, 512]
+SKIPGRAM_TRAIN_DATASET_SIZE = 1_000_000
+SKIPGRAM_VAL_DATASET_SIZE = 10_000
+SKIPGRAM_NUM_WORKERS = 0
 
 # Color
 BLACK_COLOR = [0, 0, 0]

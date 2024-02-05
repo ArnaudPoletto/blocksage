@@ -1,14 +1,15 @@
 import numpy as np
+from typing import Dict
 
-from src.zones.zone import Zone
 from src.utils.log import warn
+from src.zones.zone import Zone
 from src.zones.section import Section
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
     AIR_NAME,
     SECTION_SIZE,
     NATURAL_UNDERGROUND_BLOCK_NAMES,
-    MAX_N_SECTIONS_PER_CLUSTER_PER_DIM,
+    N_SECTIONS_PER_CLUSTER_PER_DIM,
     CLUSTER_SIZE,
 )
 
@@ -55,9 +56,9 @@ class Cluster(Zone):
             warn(
                 f"The region data do not fit the expected shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x) = ({cluster_size}, {cluster_size}, {cluster_size}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
-        if cluster_size < 0 or cluster_size > MAX_N_SECTIONS_PER_CLUSTER_PER_DIM:
+        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
             raise ValueError(
-                f"❌ cluster_size must be in [0, {MAX_N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
+                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
             )
         if cluster_size % 2 == 0:
             raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
@@ -65,7 +66,7 @@ class Cluster(Zone):
         super().__init__(data, x_world, y_world, z_world)
         self.cluster_size = cluster_size
 
-    def get_data_for_display(self) -> np.ndarray:
+    def _get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_cluster()
 
     def get_section(self, x: int, y: int, z: int) -> Section:
@@ -79,7 +80,7 @@ class Cluster(Zone):
 
         Raises:
             ValueError: If the x, y or z coordinates are out of bounds.
-            
+
         Returns:
             np.ndarray: The section of blocks.
         """
@@ -120,16 +121,16 @@ class Cluster(Zone):
             .transpose((0, 2, 1))
         )
 
-    def is_relevant(self, block_id_dict: dict = None) -> bool:
+    def is_relevant(self, block_id_dict: Dict[str, int] = None) -> bool:
         """
         Check whether the cluster is relevant. A cluster is relevant if the following requirements are met:
         - There is no non-loaded section in the cluster.
-        - The center section has at most 90% of non-air blocks.
+        # - The center section has at most 90% of non-air blocks. (REMOVED)
         - The center section has at most 90% of air blocks.
-        - The cluster has less than 70% of natural underground blocks.
+        # - The cluster has less than 70% of natural underground blocks. (REMOVED)
 
         Args:
-            block_id_dict (dict, optional): Dictionary of block IDs. Defaults to None.
+            block_id_dict (Dict[str, int], optional): Dictionary of block IDs. Defaults to None.
 
         Returns:
             bool: Whether the cluster is relevant.
@@ -147,13 +148,13 @@ class Cluster(Zone):
         )
         center_section_data = center_section.get_data_by_section()
         center_section_n_blocks = center_section_data.size
-
         air_id = block_id_dict[AIR_NAME]
-        n_non_air_blocks = np.count_nonzero(center_section_data != air_id)
-        percent_non_air_blocks = n_non_air_blocks / center_section_n_blocks
+        
+        # n_non_air_blocks = np.count_nonzero(center_section_data != air_id)
+        # percent_non_air_blocks = n_non_air_blocks / center_section_n_blocks
 
-        if percent_non_air_blocks > 0.9:
-            return False
+        # if percent_non_air_blocks > 0.9:
+        #     return False
 
         # Air blocks percentage at most 90% in the center section
         n_air_blocks = np.count_nonzero(center_section_data == air_id)
@@ -163,19 +164,19 @@ class Cluster(Zone):
             return False
 
         # More than 70% of natural underground blocks in the cluster
-        natural_underground_block_ids = [
-            block_id_dict[name]
-            for name in block_id_dict
-            if name in NATURAL_UNDERGROUND_BLOCK_NAMES
-        ]
-        n_natural_underground_blocks = np.count_nonzero(
-            np.isin(self.data, natural_underground_block_ids)
-        )
-        percent_natural_underground_blocks = (
-            n_natural_underground_blocks / self.data.size
-        )
+        # natural_underground_block_ids = [
+        #     block_id_dict[name]
+        #     for name in block_id_dict
+        #     if name in NATURAL_UNDERGROUND_BLOCK_NAMES
+        # ]
+        # n_natural_underground_blocks = np.count_nonzero(
+        #     np.isin(self.data, natural_underground_block_ids)
+        # )
+        # percent_natural_underground_blocks = (
+        #     n_natural_underground_blocks / self.data.size
+        # )
 
-        if percent_natural_underground_blocks > 0.7:
-            return False
+        # if percent_natural_underground_blocks > 0.7:
+        #     return False
 
         return True

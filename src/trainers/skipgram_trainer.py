@@ -4,13 +4,15 @@ from typing import override
 from torch.optim import Optimizer
 from torch.cuda.amp import autocast
 
+from src.utils.log import warn
 from src.trainers.trainer import Trainer
-
+from src.models.skipgram import SkipGram
 from src.config import DEVICE
 
-class AutoEncoderTrainer(Trainer):
+
+class SkipGramTrainer(Trainer):
     """
-    Trainer class used to train an autoencoder model.
+    Trainer class used to train a skip-gram model.
     """
 
     def __init__(
@@ -33,8 +35,14 @@ class AutoEncoderTrainer(Trainer):
             evaluation_steps (int): Evaluation steps for evaluation.
             print_statistics (bool, optional): Whether to print statistics during training. Defaults to False.
             use_scaler (bool, optional): Whether to use scaler. Defaults to False.
-            name (str, optional): Name of the model. Defaults to the empty string.
+            name (str, optional): Name of the model. Defaults to the empty string.$
+
+        Raises:
+            ValueError: If the model is not an instance of SkipGram.
         """
+        if not isinstance(model, SkipGram):
+            raise ValueError("❌ Model must be an instance of SkipGram.")
+
         super().__init__(
             model=model,
             criterion=criterion,
@@ -54,32 +62,22 @@ class AutoEncoderTrainer(Trainer):
         name += f"_{optimizer.__class__.__name__}optim"
         name += f"_{num_epochs}epochs"
         name += f"_{str(learning_rate).replace('.', '')}lr"
-        name += f"_{self.criterion.__class__.__name__}loss"
-        name += f"_{self.model.activation.__class__.__name__}act"
-        name += f"_{str(self.model.dropout_rate).replace('.', '')}dropout"
-        name += f"_{self.accumulation_steps}accsteps"
-        name += f"_{self.evaluation_steps}evalsteps"
-        name += f"_{len(self.model.encoder_conv_channels)}encconvs"
-        name += f"_{len(self.model.decoder_conv_channels)}decconvs"
-        name += f"_{'' if self.model.with_pooling else 'no'}pool"
+        name += f"_{self.model.vocabulary_size}vocsize"
+        name += f"_{self.model.embedding_dimension}embdim"
 
         return name
-    
+
     def _forward_pass(self, batch: tuple) -> torch.Tensor:
         # Unpack batch
-        cluster_masked, cluster_gt = batch
-        cluster_masked = cluster_masked.to(DEVICE)
-        cluster_gt = cluster_gt.to(DEVICE)
+        target_block, positive_context_block, negative_context_blocks = batch
+        target_block = target_block.to(DEVICE)
+        positive_context_block = positive_context_block.to(DEVICE)
+        negative_context_blocks = negative_context_blocks.to(DEVICE)
 
-        # Forward pass
+        # Forward pass and get loss
         with autocast(enabled=self.use_scaler):
-            outputs = self.model(cluster_masked)
+            loss = self.model(
+                target_block, positive_context_block, negative_context_blocks
+            )
 
-        # Get predictions and targets
-        pred = torch.argmax(outputs, dim=1)
-        targets = torch.argmax(cluster_gt, dim=1)
-
-        # Compute loss
-        loss = self.criterion(outputs, cluster_gt)
-
-        return loss, pred, targets
+        return loss, None, None

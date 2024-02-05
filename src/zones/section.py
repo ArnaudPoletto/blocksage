@@ -40,6 +40,9 @@ class Section(Zone):
 
         super().__init__(data, x_world, y_world, z_world)
 
+    def _get_data_for_display(self) -> np.ndarray:
+        return self.get_data_by_section()
+
     def get_data_by_section(self) -> np.ndarray:
         """
         View the blocks by section, i.e. as an array of shape (section_x, section_y, section_z).
@@ -48,6 +51,3 @@ class Section(Zone):
             np.ndarray: Array of block IDs of shape (section_x, section_y, section_z).
         """
         return self.data.transpose((2, 0, 1))
-
-    def get_data_for_display(self) -> np.ndarray:
-        return self.get_data_by_section()
