@@ -19,20 +19,30 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 # Wandb
 WANDB_PROJECT_NAME = "blocksage"
 WANDB_DATASET_NAME = "Minecraft Generated Worlds"
+SWEEP_NUM_EVALUATIONS_PER_EPOCH = 25
 
 # Paths
 DATA_PATH = str(GLOBAL_DIR / "data") + "/"
 CONFIG_PATH = str(GLOBAL_DIR / "config") + "/"
+DATA_MODELS_PATH = str(GLOBAL_DIR / "data" / "models") + "/"
+
 REGION_DATASET_PATH = f"{DATA_PATH}region_dataset/"
 CLUSTER_DATASET_PATH = f"{DATA_PATH}cluster_dataset/"
 SKIPGRAM_DATASET_PATH = f"{DATA_PATH}skipgram_dataset/"
+
 BLOCK_STATES_PATH = f"{DATA_PATH}blockstates/"
 BLOCK_ID_DICT_PATH = f"{DATA_PATH}block_id_dict.json"
 BLOCK_COLOR_DICT_PATH = f"{DATA_PATH}block_color_dict.json"
+
 TRAINER_RESULTS_FOLDER_PATH = f"{DATA_PATH}results/"
 TRAINER_RESULTS_FILE_PATH = f"{TRAINER_RESULTS_FOLDER_PATH}results.csv"
+
 SKIPGRAM_COOCCURRENCE_MATRIX_PATH = f"{DATA_PATH}skipgram_cooccurrence_matrix.npy"
+SKIPGRAM_UNIGRAM_DISTRIBUTION_PATH = f"{DATA_PATH}skipgram_unigram_distribution.npy"
 SKIPGRAM_CONFIG_PATH = f"{CONFIG_PATH}skipgram_best_params.yml"
+SKIPGRAM_SWEEP_CONFIG_PATH = f"{CONFIG_PATH}skipgram_sweep_params.yml"
+SKIPGRAM_EMBEDDINGS_PATH = f"{DATA_PATH}skipgram_embeddings.npy"
+SKIPGRAM_MODEL_PATH = f"{DATA_MODELS_PATH}skipgram.pt"
 
 # MCA file
 SECTION_SIZE = 16
@@ -54,6 +64,7 @@ SKIPGRAM_WINDOW_SIZE = 2
 SKIPGRAM_TRAIN_DATASET_SIZE = 1_000_000
 SKIPGRAM_VAL_DATASET_SIZE = 10_000
 SKIPGRAM_NUM_WORKERS = 0
+SKIPGRAM_UNIGRAM_MIN_COUNT = 1
 
 # Color
 BLACK_COLOR = [0, 0, 0]

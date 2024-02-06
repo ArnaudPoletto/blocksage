@@ -178,7 +178,7 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> Tup
 
 def _read_and_process_chunk_imap(args: Tuple[BytesIO, dict]) -> Tuple[int, int, int, int, np.ndarray]:
     """
-    Read and process a chunk of blocks using the imap_unordered method.
+    Read and process a chunk of blocks using the imap_unordered method. Used for parallelization.
 
     Args:
         args (tuple): Tuple containing:

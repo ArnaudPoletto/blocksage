@@ -1,6 +1,7 @@
 # Adapted from: https://github.com/fanglanting/skip-gram-pytorch/tree/master
 
 import torch
+import numpy as np
 import torch.nn as nn
 from pathlib import Path
 import torch.nn.functional as F
@@ -38,12 +39,8 @@ class SkipGram(nn.Module):
         self.vocabulary_size = vocabulary_size
         self.embedding_dimension = embedding_dimension
 
-        self.target_embeddings = nn.Embedding(
-            vocabulary_size, embedding_dimension
-        )
-        self.context_embeddings = nn.Embedding(
-            vocabulary_size, embedding_dimension
-        )
+        self.target_embeddings = nn.Embedding(vocabulary_size, embedding_dimension)
+        self.context_embeddings = nn.Embedding(vocabulary_size, embedding_dimension)
 
         self._initialize_embeddings()
 
@@ -68,8 +65,12 @@ class SkipGram(nn.Module):
 
         # Compute embeddings
         target_block_embeddings = self.target_embeddings(target_block)
-        positive_context_block_embeddings = self.context_embeddings(positive_context_block)
-        negative_context_blocks_embeddings = self.context_embeddings(negative_context_blocks)
+        positive_context_block_embeddings = self.context_embeddings(
+            positive_context_block
+        )
+        negative_context_blocks_embeddings = self.context_embeddings(
+            negative_context_blocks
+        )
 
         # Get positive score
         positive_score = torch.mul(
@@ -100,14 +101,24 @@ class SkipGram(nn.Module):
         Returns:
             torch.Tensor: Input embeddings.
         """
-        return self.u_embeddings.weight.data.cpu().numpy()
+        return self.target_embeddings.weight.data.cpu().numpy()
 
-    def save_input_embeddings(self, path) -> None:
+    def save_input_embeddings(self, path: str) -> None:
         """
         Save input embeddings.
 
         Args:
             path (str): Path to save input embeddings.
         """
-        torch.save(self.get_input_embeddings(), path)
+        np.save(path, self.get_input_embeddings())
         log(f"💾 Saved input embeddings to {Path(path).resolve()}")
+
+    def save_model(self, path: str) -> None:
+        """
+        Save the model.
+
+        Args:
+            path (str): Path to save the model.
+        """
+        torch.save(self.state_dict(), path)
+        log(f"💾 Saved model to {Path(path).resolve()}")

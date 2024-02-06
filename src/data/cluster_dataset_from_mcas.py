@@ -157,7 +157,7 @@ def _process_region_file(
 
 def _process_region_file_imap(args) -> None:
     """
-    Process a region file using the imap_unordered method.
+    Process a region file using the imap_unordered method. Used for parallelization.
 
     Args:
         args (tuple): Tuple containing:

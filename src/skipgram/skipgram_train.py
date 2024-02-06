@@ -4,6 +4,7 @@ from pathlib import Path
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
+import torch
 import torch.nn as nn
 from torch.optim import AdamW
 
@@ -21,6 +22,8 @@ from src.config import (
     SKIPGRAM_CONFIG_PATH,
     SKIPGRAM_TRAIN_DATASET_SIZE,
     SKIPGRAM_VAL_DATASET_SIZE,
+    SKIPGRAM_EMBEDDINGS_PATH,
+    SKIPGRAM_MODEL_PATH,
 )
 
 
@@ -79,7 +82,8 @@ def _get_trainer(
     )
 
 
-def _get_optimizer(
+def get_optimizer(
+    model: nn.Module,
     learning_rate: float,
     weight_decay: float,
 ):
@@ -87,8 +91,9 @@ def _get_optimizer(
     Get the optimizer.
 
     Args:
-        learning_rate (float, optional): Learning rate. Defaults to 0.01.
-        weight_decay (float, optional): Weight decay. Defaults to 0.01.
+        model (nn.Module): Model.
+        learning_rate (float, optional): Learning rate.
+        weight_decay (float, optional): Weight decay.
 
     Returns:
         torch.optim.Optimizer: The optimizer
@@ -141,7 +146,8 @@ if __name__ == "__main__":
         use_scaler=use_scaler,
     )
 
-    optimizer = _get_optimizer(
+    optimizer = get_optimizer(
+        model=model,
         learning_rate=learning_rate,
         weight_decay=weight_decay,
     )
@@ -153,3 +159,7 @@ if __name__ == "__main__":
         num_epochs=num_epochs,
         learning_rate=learning_rate,
     )
+
+    # Save the model and embeddings
+    model.save_input_embeddings(SKIPGRAM_EMBEDDINGS_PATH)
+    model.save_model(SKIPGRAM_MODEL_PATH)
