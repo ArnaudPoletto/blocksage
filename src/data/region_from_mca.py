@@ -15,8 +15,7 @@ from typing import List, Tuple, Dict
 from multiprocessing import Pool
 
 from src.zones.region import Region
-from src.utils.log import log, warn
-from src.utils.block_dictionary import get_block_id_dictionary
+from src.utils.log import warn
 from src.config import N_CHUNKS_PER_REGION_PER_DIM, CHUNK_Y_SIZE, MIN_Y, SECTION_SIZE
 
 OFFSET_SHIFT = 8
@@ -68,11 +67,12 @@ def _process_chunk(nbt_data: File, block_id_dict: Dict[str, int]) -> Tuple[int, 
         block_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
 
     Returns:
-        int: x coordinate of the chunk in the region.
-        int: z coordinate of the chunk in the region.
-        int: x coordinate of the chunk in the world.
-        int: z coordinate of the chunk in the world.
-        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
+        Tuple[int, int, int, int, np.ndarray]: Tuple containing:
+            int: x coordinate of the chunk in the region.
+            int: z coordinate of the chunk in the region.
+            int: x coordinate of the chunk in the world.
+            int: z coordinate of the chunk in the world.
+            np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
     # Get chunk coordinates
     chunk_x_in_region = nbt_data["xPos"] % N_CHUNKS_PER_REGION_PER_DIM
@@ -147,11 +147,12 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_id_dict: Dict[str,
         block_id_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
 
     Returns:
-        int: x coordinate of the chunk in the region.
-        int: z coordinate of the chunk in the region.
-        int: x coordinate of the chunk in the world.
-        int: z coordinate of the chunk in the world.
-        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
+        Tuple[int, int, int, int, np.ndarray]: Tuple containing:
+            int: x coordinate of the chunk in the region.
+            int: z coordinate of the chunk in the region.
+            int: x coordinate of the chunk in the world.
+            int: z coordinate of the chunk in the world.
+            np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
 
     # Seek the chunk from the offset and sector count
@@ -186,11 +187,12 @@ def _read_and_process_chunk_imap(args: Tuple[BytesIO, dict]) -> Tuple[int, int, 
             block_dict (dict): Dictionary of block states and their corresponding index.
 
     Returns:
-        int: x coordinate of the chunk in the region.
-        int: z coordinate of the chunk in the region.
-        int: x coordinate of the chunk in the world.
-        int: z coordinate of the chunk in the world.
-        np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
+        Tuple[int, int, int, int, np.ndarray]: Tuple containing:
+            int: x coordinate of the chunk in the region.
+            int: z coordinate of the chunk in the region.
+            int: x coordinate of the chunk in the world.
+            int: z coordinate of the chunk in the world.
+            np.ndarray: Array of block IDs of shape (section, section_y, section_z, section_x).
     """
     return _read_and_process_chunk(*args)
 

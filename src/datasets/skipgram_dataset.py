@@ -29,10 +29,10 @@ class SkipGramDataset(Dataset):
         dataset_size: int,
         num_negative_samples: int,
         unigram_distribution: np.ndarray,
-        noise_power: float = 0.75,
-        minimum_noise_distribution: float = 1e-4,
-        subsampling_threshold: float = 1e-3,
-        minimum_subsampling_distribution: float = 1e-5,
+        noise_power: float,
+        minimum_noise_distribution: float,
+        subsampling_threshold: float,
+        minimum_subsampling_distribution: float,
     ):
         """
         Initialize the skip-gram dataset.
@@ -40,12 +40,12 @@ class SkipGramDataset(Dataset):
         Args:
             cooccurrence_matrix (np.ndarray): Co-occurrence matrix.
             dataset_size (int): Size of the dataset.
-            num_negative_samples (int, optional): Number of negative samples to draw.
+            num_negative_samples (int): Number of negative samples to draw.
             unigram_distribution (np.ndarray): The probability distribution of individual blocks in the training corpus.
-            noise_power (float, optional): The exponent used to shape the noise distribution. Defaults to 0.75.
-            minimum_noise_distribution (float, optional): The minimum distribution a noise block can have. Defaults to 1e-4.
-            subsampling_threshold (float, optional): The threshold used to subsample frequent words. Defaults to 1e-3.
-            minimum_subsampling_distribution (float, optional): The minimum distribution a subsampled block can have. Defaults to 1e-5.
+            noise_power (float): The exponent used to shape the noise distribution.
+            minimum_noise_distribution (float): The minimum distribution a noise block can have.
+            subsampling_threshold (float): The threshold used to subsample frequent words.
+            minimum_subsampling_distribution (float): The minimum distribution a subsampled block can have.
 
         Raises:
             ValueError: If the co-occurrence matrix is not a square matrix.
@@ -162,24 +162,22 @@ def get_dataloader(
     dataset_size: int,
     num_negative_samples: int,
     batch_size: int,
-    noise_power: float = 0.75,
-    minimum_noise_distribution: float = 1e-4,
-    subsampling_threshold: float = 1e-3,
-    minimum_subsampling_distribution: float = 1e-5,
-    num_workers: int = SKIPGRAM_NUM_WORKERS,
+    noise_power: float,
+    minimum_noise_distribution: float,
+    subsampling_threshold: float,
+    minimum_subsampling_distribution: float,
 ) -> DataLoader:
     """
     Get the dataloader for the skip-gram dataset.
 
     Args:
-        dataset_size (int, optional): Size of the dataset.
-        num_negative_samples (int, optional): Number of negative samples to draw.
-        batch_size (int, optional): Batch size.
-        noise_power (float, optional): The exponent used to shape the noise distribution. Defaults to 0.75.
-        minimum_noise_distribution (float, optional): The minimum distribution a noise block can have. Defaults to 1e-4.
-        subsampling_threshold (float, optional): The threshold used to subsample frequent words. Defaults to 1e-3.
-        minimum_subsampling_distribution (float, optional): The minimum distribution a subsampled block can have. Defaults to 1e-5.
-        num_workers (int, optional): Number of workers. Defaults to SKIPGRAM_NUM_WORKERS.
+        dataset_size (int): Size of the dataset.
+        num_negative_samples (int): Number of negative samples to draw.
+        batch_size (int): Batch size.
+        noise_power (float): The exponent used to shape the noise distribution.
+        minimum_noise_distribution (float): The minimum distribution a noise block can have.
+        subsampling_threshold (float): The threshold used to subsample frequent words.
+        minimum_subsampling_distribution (float): The minimum distribution a subsampled block can have.
 
     Returns:
         DataLoader: The dataloader for the skip-gram dataset.
@@ -202,7 +200,7 @@ def get_dataloader(
 
     # Get dataloader
     dataloader = DataLoader(
-        dataset, batch_size=batch_size, num_workers=num_workers, shuffle=True
+        dataset, batch_size=batch_size, num_workers=SKIPGRAM_NUM_WORKERS, shuffle=True
     )
 
     return dataloader

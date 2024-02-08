@@ -4,7 +4,6 @@ from pathlib import Path
 GLOBAL_DIR = Path(__file__).parent / ".." / ".."
 sys.path.append(str(GLOBAL_DIR))
 
-import torch
 import torch.nn as nn
 from torch.optim import AdamW
 
@@ -92,8 +91,8 @@ def get_optimizer(
 
     Args:
         model (nn.Module): Model.
-        learning_rate (float, optional): Learning rate.
-        weight_decay (float, optional): Weight decay.
+        learning_rate (float): Learning rate.
+        weight_decay (float): Weight decay.
 
     Returns:
         torch.optim.Optimizer: The optimizer

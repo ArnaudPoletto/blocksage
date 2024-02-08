@@ -1,5 +1,3 @@
-# TODO: this is SkipGramSweeper, make a default parent class
-
 from typing import Any
 from torch.utils.data import DataLoader
 
@@ -12,26 +10,24 @@ from src.config import (
 )
 
 
-class Sweeper:
+class SkipGramSweeper:
     """
-    Sweeper class for sweeping the parameter space of a model.
+    Sweeper class for sweeping the parameter space of a skipgram model.
     """
 
     def __init__(
         self,
-        model_class: str,
         config: Any,
         vocabulary_size: int,
     ):
         """
-        Initialize the Sweeper.
+        Initialize the skipgram sweeper.
 
         Args:
-            model_class (str): Model class.
             config (Any): Wandb config.
+            vocabulary_size (int): Vocabulary size.
 
         """
-        self.model_class = model_class
         self.config = config
         self.vocabulary_size = vocabulary_size
 
@@ -57,7 +53,7 @@ class Sweeper:
         evaluation_steps = int(len(train_loader) // SWEEP_NUM_EVALUATIONS_PER_EPOCH)
 
         # Get model, optimizer and trainer
-        self.model = self.model_class(
+        self.model = SkipGram(
             vocabulary_size=self.vocabulary_size,
             embedding_dimension=embedding_dimension,
         ).to(DEVICE)
@@ -68,12 +64,7 @@ class Sweeper:
             weight_decay=weight_decay,
         )
 
-        if self.model_class == SkipGram:
-            self.trainer = SkipGramTrainer
-        else:
-            raise ValueError(f"❌ Model {self.model_class} not supported for sweeping.")
-
-        self.trainer = self.trainer(
+        self.trainer = SkipGramTrainer(
             model=self.model,
             criterion=None,  # TODO: add criterion for other models
             accumulation_steps=accumulation_steps,

@@ -8,7 +8,7 @@ import wandb
 from typing import Dict
 
 from src.utils.parser import get_config
-from src.sweepers.sweeper import Sweeper
+from src.sweepers.skipgram_sweeper import SkipGramSweeper
 from src.models.skipgram import SkipGram
 from src.datasets.skipgram_dataset import get_dataloader
 from src.utils.block_dictionary import get_block_id_dictionary
@@ -62,7 +62,7 @@ def _sweep(config: Dict = None) -> None:
         vocabulary_size = len(block_id_dict)
 
         # Sweep the model
-        sweeper = Sweeper(
+        sweeper = SkipGramSweeper(
             model_class=SkipGram,
             config=config,
             vocabulary_size=vocabulary_size,

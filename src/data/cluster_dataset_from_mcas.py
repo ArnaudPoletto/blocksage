@@ -8,9 +8,8 @@ import os
 import gzip
 import pickle
 import argparse
-import numpy as np
 from tqdm import tqdm
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from multiprocessing import Pool
 
 from src.utils.log import warn
@@ -29,7 +28,7 @@ def _parse_arguments() -> Tuple[int, int, bool, int]:
     Parse command line arguments.
 
     Returns:
-        tuple: Tuple containing:
+        Tuple[int, int, bool, int]: Tuple containing:
             cluster_size (int): Size of the clusters in blocks. Defaults to CLUSTER_SIZE.
             cluster_stride (int): Stride of the clusters in blocks. Defaults to CLUSTER_STRIDE.
             parallelize (bool): Whether to parallelize the processing of region files. Defaults to False.
@@ -106,6 +105,7 @@ def _process_region_file(
     cluster_stride: int,
     block_id_dict: Dict[str, int],
     parallelize: bool,
+    max_concurrent_processes: int,
 ) -> None:
     """
     Process a region file.
@@ -118,6 +118,7 @@ def _process_region_file(
         cluster_stride (int): Stride of the clusters in blocks.
         block_id_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
         parallelize (bool): Whether to parallelize the processing of region files.
+        max_concurrent_processes (int): Maximum number of concurrent processes.
     """
     region_file_path = os.path.join(region_folder_path, region_file)
 
@@ -126,6 +127,7 @@ def _process_region_file(
         region_file_path,
         block_id_dict=block_id_dict,
         parallelize_chunks=not parallelize,  # If already parallelized at the region level, don't parallelize at the chunk level
+        max_concurrent_processes=max_concurrent_processes,
         show_bar=False,
     )
 
@@ -200,6 +202,7 @@ if __name__ == "__main__":
                 cluster_stride,
                 block_id_dict,
                 parallelize,
+                max_concurrent_processes,
             )
             for region_folder, region_folder_path, region_file in region_names_and_paths
         ]
@@ -222,6 +225,7 @@ if __name__ == "__main__":
                 cluster_stride,
                 block_id_dict,
                 parallelize,
+                max_concurrent_processes,
             )
             bar.update(1)
 
