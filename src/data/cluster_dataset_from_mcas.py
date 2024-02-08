@@ -104,7 +104,7 @@ def _process_region_file(
     region_file: str,
     cluster_size: int,
     cluster_stride: int,
-    block_id_dict: dict,
+    block_id_dict: Dict[str, int],
     parallelize: bool,
 ) -> None:
     """
@@ -116,7 +116,7 @@ def _process_region_file(
         region_file (str): Name of the region file.
         cluster_size (int): Size of the clusters in blocks.
         cluster_stride (int): Stride of the clusters in blocks.
-        block_id_dict (dict): Dictionary of block states and their corresponding index.
+        block_id_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
         parallelize (bool): Whether to parallelize the processing of region files.
     """
     region_file_path = os.path.join(region_folder_path, region_file)

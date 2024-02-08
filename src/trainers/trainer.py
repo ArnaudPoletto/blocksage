@@ -11,13 +11,15 @@ from torch.optim import Optimizer
 from abc import ABC, abstractmethod
 from torch.cuda.amp import GradScaler
 from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from src.utils.log import log, warn
 from src.config import (
+    DATA_MODELS_PATH,
     WANDB_PROJECT_NAME,
-    TRAINER_RESULTS_FOLDER_PATH,
-    TRAINER_RESULTS_FILE_PATH,
     WANDB_DATASET_NAME,
+    TRAINER_RESULTS_FILE_PATH,
+    TRAINER_RESULTS_FOLDER_PATH,
 )
 
 
@@ -32,9 +34,10 @@ class Trainer(ABC):
         criterion: nn.Module,
         accumulation_steps: int,
         evaluation_steps: int,
-        print_statistics: bool = False,
-        use_scaler: bool = False,
-        name: str = "",
+        name: str,
+        use_scheduler: bool,
+        use_scaler: bool,
+        print_statistics: bool,
     ) -> None:
         """
         Initialize the trainer.
@@ -44,9 +47,10 @@ class Trainer(ABC):
             criterion (nn.Module): Loss function to use.
             accumulation_steps (int): Accumulation steps for gradient accumulation.
             evaluation_steps (int): Evaluation steps for evaluation.
-            print_statistics (bool, optional): Whether to print statistics during training. Defaults to False.
-            use_scaler (bool, optional): Whether to use scaler. Defaults to False.
-            name (str, optional): Name of the model. Defaults to the empty string.
+            name (str): Name of the model.
+            use_scheduler (bool): Whether to use scheduler.
+            use_scaler (bool): Whether to use scaler.
+            print_statistics (bool): Whether to print statistics during training.
 
         Raises:
             ValueError: If accumulation_steps is not a positive integer.
@@ -60,6 +64,9 @@ class Trainer(ABC):
         if evaluation_steps <= 0:
             raise ValueError("❌ Evaluation steps must be a positive integer.")
 
+        if use_scheduler:
+            warn("Using scheduler is recommended for better convergence.")
+
         if not use_scaler:
             warn("Using scaler is recommended for better performance.")
 
@@ -67,9 +74,10 @@ class Trainer(ABC):
         self.criterion = criterion
         self.accumulation_steps = accumulation_steps
         self.evaluation_steps = evaluation_steps
-        self.print_statistics = print_statistics
-        self.use_scaler = use_scaler
         self.name = name
+        self.use_scheduler = use_scheduler
+        self.use_scaler = use_scaler
+        self.print_statistics = print_statistics
 
         self.best_eval_val_loss = np.inf
         self.eval_train_loss = 0
@@ -97,7 +105,7 @@ class Trainer(ABC):
         val_loader: DataLoader,
         optimizer: Optimizer,
         num_epochs: int,
-        learning_rate: int = 0,
+        learning_rate: int,
         save_model: bool = True,
         sweeping: bool = False,
     ) -> Dict:
@@ -109,7 +117,7 @@ class Trainer(ABC):
             val_loader (DataLoader): Validation data loader.
             optimizer (Optimizer): Optimizer to use during training.
             num_epochs (int): Number of epochs to train.
-            learning_rate (int, optional): Learning rate to use. Defaults to 0.
+            learning_rate (int): Learning rate to use.
             save_model (bool, optional): Whether to save the best model. Defaults to True.
             sweeping (bool, optional): Whether the training is part of a sweeping. Defaults to False.
 
@@ -125,14 +133,17 @@ class Trainer(ABC):
         if not save_model:
             warn("The trained model will not be saved.")
 
+        if sweeping:
+            log("Sweeping mode enabled. Not using wandb default logging.")
+
         name = self._get_name(optimizer, num_epochs, learning_rate)
 
         # Get a timestamp
         timestamp = time.strftime("%Y%m%d-%H%M%S")
         name = f"{timestamp}_{name}"
 
-        # Create a folder in data/models folder with the name of the model
-        model_dir = f"../../data/models/{self.model.__class__.__name__.lower()}/"
+        # Create a folder in data models folder with the name of the model
+        model_dir = f"{DATA_MODELS_PATH}{self.model.__class__.__name__.lower()}/"
         os.makedirs(model_dir, exist_ok=True)
 
         save_path = f"{model_dir}{name}.pth" if save_model else None
@@ -164,6 +175,13 @@ class Trainer(ABC):
             "evaluation_steps": self.evaluation_steps,
         }
 
+        # Scheduler
+        scheduler = (
+            ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=5)
+            if self.use_scheduler
+            else None
+        )
+
         # Scaler
         scaler = GradScaler(enabled=self.use_scaler)
 
@@ -176,8 +194,9 @@ class Trainer(ABC):
                     optimizer,
                     statistics,
                     scaler,
-                    save_path=save_path,
-                    bar=bar,
+                    scheduler,
+                    save_path,
+                    bar,
                 )
 
         wandb.unwatch(self.model)
@@ -269,9 +288,9 @@ class Trainer(ABC):
             NotImplementedError: If not implemented by child class.
 
         Returns:
-            train_loss (torch.Tensor): The loss of the batch.
-            pred (torch.Tensor): The prediction of the batch.
-            target (torch.Tensor): The target of the batch.
+            train_loss (torch.Tensor): Loss of the batch.
+            pred (torch.Tensor): Prediction of the batch.
+            target (torch.Tensor): Target of the batch.
         """
         raise NotImplementedError
 
@@ -282,20 +301,22 @@ class Trainer(ABC):
         optimizer: Optimizer,
         statistics: Dict,
         scaler: GradScaler,
-        save_path: str = None,
-        bar: tqdm = None,
+        scheduler: ReduceLROnPlateau,
+        save_path: str,
+        bar: tqdm,
     ) -> None:
         """
         Train the model for one epoch.
 
         Args:
-            train_loader (DataLoader): The training data loader.
-            val_loader (DataLoader): The validation data loader.
-            optimizer (Optimizer): The optimizer to use during training.
-            statistics (Dict): The statistics of the training.
-            scaler (GradScaler): The scaler to use.
-            save_path (str, optional): The path to save the best model. Defaults to None.
-            bar (tqdm, optional): The progress bar to use. Defaults to None.
+            train_loader (DataLoader): Training data loader.
+            val_loader (DataLoader): Validation data loader.
+            optimizer (Optimizer): Optimizer to use during training.
+            statistics (Dict): Statistics of the training.
+            scaler (GradScaler): Scaler to use.
+            scheduler (ReduceLROnPlateau): Scheduler to use.
+            save_path (str): Path to save the best model.
+            bar (tqdm): Progress bar to use.
         """
         self.model.train()
 
@@ -336,7 +357,7 @@ class Trainer(ABC):
                 n_train_loss = 0
 
                 # Get validation loss ans statistics
-                stats = self._evaluate(val_loader, bar=bar)
+                stats = self._evaluate(val_loader, bar, show_time=False)
                 self.eval_val_loss = stats["loss"]
                 statistics["val_loss"].append(self.eval_val_loss)
 
@@ -373,17 +394,23 @@ class Trainer(ABC):
                     wandb_log["val_acc"] = stats["accuracy"]
                 wandb.log(wandb_log)
 
+                # Step the scheduler
+                if scheduler is not None:
+                    scheduler.step(self.eval_val_loss)
+
     def _evaluate(
-        self, loader: DataLoader, bar: tqdm = None, show_time: bool = False
+        self, loader: DataLoader, bar: tqdm, show_time: bool
     ) -> Dict[str, float]:
         """
         Evaluate the model on the given loader.
 
         Args:
-            loader (DataLoader): The loader to evaluate on.
+            loader (DataLoader): Loader to evaluate on.
+            bar (tqdm): Progress bar to use.
+            show_time (bool): Whether to show the time taken for evaluation.
 
         Returns:
-            Dict[str, float]: The evaluation statistics, which contain:
+            Dict[str, float]: Evaluation statistics, which contain:
                 - the validation loss
                 - the accuracy
         """

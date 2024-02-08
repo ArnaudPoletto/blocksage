@@ -11,7 +11,7 @@ class Section(Zone):
     SHAPE_SIZE = 3
 
     def __init__(
-        self, data: np.ndarray, x_world: int = 0, y_world: int = 0, z_world: int = 0
+        self, data: np.ndarray, x_world: int, y_world: int, z_world: int
     ) -> None:
         """
         Initialize a section.

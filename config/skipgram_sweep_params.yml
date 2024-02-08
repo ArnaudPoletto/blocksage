@@ -3,7 +3,7 @@ metric:
   goal: minimize
   name: val_loss
 
-run_cap: 100
+run_cap: 250
 
 parameters:
   num_negative_samples:
@@ -11,23 +11,17 @@ parameters:
       - 2
       - 5
       - 10
-      - 15
       - 20
 
   batch_size:
-    values: 
-      - 32
-      - 64
-      - 128
-      - 256
+    distribution: constant
+    value: 256
 
   embedding_dimension:
     values: 
       - 8
       - 16
       - 32
-      - 64
-      - 128
 
   learning_rate:
     distribution: log_uniform_values
@@ -50,3 +44,24 @@ parameters:
   num_epochs:
     distribution: constant
     value: 1
+
+  noise_power:
+    values:
+      - 0.75
+      - 0.5
+      - 0.25
+
+  minimum_noise_distribution:
+    distribution: log_uniform_values
+    max: 1e-3
+    min: 1e-6
+
+  subsampling_threshold:
+    distribution: log_uniform_values
+    max: 1e-3
+    min: 1e-6
+
+  minimum_subsampling_distribution:
+    distribution: log_uniform_values
+    max: 1e-3
+    min: 1e-6

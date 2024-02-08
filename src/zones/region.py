@@ -22,14 +22,14 @@ class Region(Zone):
 
     SHAPE_SIZE = 6
 
-    def __init__(self, data: np.ndarray, x_world: int = 0, z_world: int = 0) -> None:
+    def __init__(self, data: np.ndarray, x_world: int, z_world: int) -> None:
         """
         Initialize a region.
 
         Args:
             data (np.ndarray): Array containing the block indices of shape (region_x, region_z, section, section_y, section_z, section_x).
-            x_world (int, optional): x coordinate of the region in the world. Defaults to 0.
-            z_world (int, optional): z coordinate of the region in the world. Defaults to 0.
+            x_world (int, optional): x coordinate of the region in the world.
+            z_world (int, optional): z coordinate of the region in the world.
 
         Raises:
             ValueError: If the data do not have the expected shape.
@@ -83,7 +83,6 @@ class Region(Zone):
         x: int,
         y: int,
         z: int,
-        cluster_size: int = CLUSTER_SIZE,
     ) -> Cluster:
         """
         Get a cluster of blocks.
@@ -92,24 +91,16 @@ class Region(Zone):
             x (int): x coordinate of the cluster.
             y (int): y coordinate of the cluster.
             z (int): z coordinate of the cluster.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
 
         Raises:
-            ValueError: If the cluster_size is out of bounds, or even.
             ValueError: If the x, y or z coordinates are out of bounds.
 
         Returns:
             np.ndarray: Cluster of blocks.
         """
-        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(
-                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
-            )
-        if cluster_size % 2 == 0:
-            raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
-        x_max = self.data.shape[0] - cluster_size + 1
-        z_max = self.data.shape[1] - cluster_size + 1
-        y_max = self.data.shape[2] - cluster_size + 1
+        x_max = self.data.shape[0] - CLUSTER_SIZE + 1
+        z_max = self.data.shape[1] - CLUSTER_SIZE + 1
+        y_max = self.data.shape[2] - CLUSTER_SIZE + 1
         if x < 0 or x >= x_max:
             raise ValueError(f"❌ x must be in [0, {x_max}), not {x}.")
         if z < 0 or z >= z_max:
@@ -118,13 +109,13 @@ class Region(Zone):
             raise ValueError(f"❌ y must be in [0, {y_max}), not {y}.")
 
         data = self.data[
-            x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
+            x : x + CLUSTER_SIZE, z : z + CLUSTER_SIZE, y : y + CLUSTER_SIZE
         ]
         x_world = self.x_world + x * SECTION_SIZE
         y_world = self.y_world + y * SECTION_SIZE
         z_world = self.z_world + z * SECTION_SIZE
 
-        return Cluster(data, x_world, y_world, z_world, cluster_size)
+        return Cluster(data, x_world, y_world, z_world)
 
     def get_section(self, x: int, y: int, z: int) -> Section:
         """
@@ -189,49 +180,30 @@ class Region(Zone):
 
     def get_clusters(
         self,
-        block_id_dict: Dict[str, int] = None,
-        cluster_size: int = CLUSTER_SIZE,
-        cluster_stride: int = CLUSTER_STRIDE,
-        only_relevant: bool = True,
+        block_id_dict: Dict[str, int],
+        only_relevant: bool,
     ) -> Generator[Cluster, None, None]:
         """
         Get a generator of clusters of blocks.
 
         Args:
-            block_id_dict (Dict[str, int], optional): Dictionary of block IDs. Defaults to None.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
-            cluster_stride (int, optional): Stride between clusters. Defaults to CLUSTER_STRIDE.
-            only_relevant (bool, optional): Whether to only return relevant clusters. Defaults to True.
-
-        Raises:
-            ValueError: If the cluster_size is out of bounds, or even.
-            ValueError: If the cluster_stride is out of bounds.
+            block_id_dict (Dict[str, int]): Dictionary of block IDs.
+            only_relevant (bool, optional): Whether to only return relevant clusters.
 
         Returns:
             Generator[Cluster]: Clusters of blocks.
         """
-        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(
-                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
-            )
-        if cluster_size % 2 == 0:
-            raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
-        if cluster_stride < 1 or cluster_stride > cluster_size:
-            raise ValueError(
-                f"❌ stride must be in [1, {cluster_size}], not {cluster_stride}."
-            )
-
         region_x, region_z, section, _, _, _ = self.data.shape
-        for x in range(0, region_x - cluster_size + 1, cluster_stride):
-            for z in range(0, region_z - cluster_size + 1, cluster_stride):
-                for y in range(0, section - cluster_size + 1, cluster_stride):
+        for x in range(0, region_x - CLUSTER_SIZE + 1, CLUSTER_STRIDE):
+            for y in range(0, section - CLUSTER_SIZE + 1, 1): # Stride does not apply to y
+                for z in range(0, region_z - CLUSTER_SIZE + 1, CLUSTER_STRIDE):
                     data = self.data[
-                        x : x + cluster_size, z : z + cluster_size, y : y + cluster_size
+                        x : x + CLUSTER_SIZE, z : z + CLUSTER_SIZE, y : y + CLUSTER_SIZE
                     ]
                     x_world = self.x_world + x * SECTION_SIZE
                     y_world = self.y_world + y * SECTION_SIZE
                     z_world = self.z_world + z * SECTION_SIZE
-                    cluster = Cluster(data, x_world, y_world, z_world, cluster_size)
+                    cluster = Cluster(data, x_world, y_world, z_world)
 
                     if only_relevant and not cluster.is_relevant(block_id_dict):
                         continue

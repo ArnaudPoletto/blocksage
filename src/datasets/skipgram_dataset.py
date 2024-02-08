@@ -30,8 +30,9 @@ class SkipGramDataset(Dataset):
         num_negative_samples: int,
         unigram_distribution: np.ndarray,
         noise_power: float = 0.75,
+        minimum_noise_distribution: float = 1e-4,
         subsampling_threshold: float = 1e-3,
-        eps: float = 1e-5,
+        minimum_subsampling_distribution: float = 1e-5,
     ):
         """
         Initialize the skip-gram dataset.
@@ -42,8 +43,9 @@ class SkipGramDataset(Dataset):
             num_negative_samples (int, optional): Number of negative samples to draw.
             unigram_distribution (np.ndarray): The probability distribution of individual blocks in the training corpus.
             noise_power (float, optional): The exponent used to shape the noise distribution. Defaults to 0.75.
+            minimum_noise_distribution (float, optional): The minimum distribution a noise block can have. Defaults to 1e-4.
             subsampling_threshold (float, optional): The threshold used to subsample frequent words. Defaults to 1e-3.
-            eps (float, optional): A small value to avoid division by zero. Defaults to 1e-5.
+            minimum_subsampling_distribution (float, optional): The minimum distribution a subsampled block can have. Defaults to 1e-5.
 
         Raises:
             ValueError: If the co-occurrence matrix is not a square matrix.
@@ -63,9 +65,14 @@ class SkipGramDataset(Dataset):
                 f"❌ Co-occurrence matrix must be a square matrix. Got shape {cooccurrence_matrix.shape} instead."
             )
 
-        if not np.all(np.isclose(np.sum(cooccurrence_matrix, axis=1), 1)):
+        if not np.all(
+            np.logical_or(
+                np.isclose(np.sum(cooccurrence_matrix, axis=1), 0),
+                np.isclose(np.sum(cooccurrence_matrix, axis=1), 1),
+            )
+        ):
             raise ValueError(
-                f"❌ Co-occurrence matrix rows must sum to 1. Got {np.sum(cooccurrence_matrix, axis=1)} instead."
+                f"❌ Co-occurrence matrix rows must either sum up to 1 for blocks found in the corpus or 0 for blocks not found in the corpus. Got {np.sum(cooccurrence_matrix, axis=1)} instead."
             )
 
         if dataset_size <= 0:
@@ -91,14 +98,22 @@ class SkipGramDataset(Dataset):
         self.dataset_size = dataset_size
         self.num_negative_samples = num_negative_samples
         # Noise distribution to sample negative context blocks
-        self.noise_distribution = unigram_distribution**noise_power
+        # See https://naturale0.github.io/2021/02/08/understanding-skip-gram#negative-sampling
+        # Modified to avoid not sampling blocks not found in the corpus, using a minimum noise distribution
+        noise_distribution = np.maximum(
+            unigram_distribution**noise_power, minimum_noise_distribution
+        )
+        noise_distribution /= noise_distribution.sum()
+        self.noise_distribution = noise_distribution
         # Subsampling distribution to subsample frequent words
         # See https://naturale0.github.io/2021/02/08/understanding-skip-gram#subsampling
-        subsampling_fraction = subsampling_threshold / (unigram_distribution + eps)
+        # Modified to avoid getting more than a factor of 2 in the subsampling distribution
+        subsampling_fraction = subsampling_threshold / (
+            unigram_distribution + subsampling_threshold
+        )
         subsampling_distribution = np.sqrt(subsampling_fraction) + subsampling_fraction
-        # subsampling_distribution = np.clip(subsampling_distribution, 0, 1)
-        self.subsampled_cooccurrence_matrix = (
-            cooccurrence_matrix * subsampling_distribution
+        self.subsampled_cooccurrence_matrix = np.maximum(
+            cooccurrence_matrix * subsampling_distribution, minimum_subsampling_distribution
         )
         self.subsampled_cooccurrence_matrix /= self.subsampled_cooccurrence_matrix.sum(
             axis=1, keepdims=True
@@ -147,6 +162,10 @@ def get_dataloader(
     dataset_size: int,
     num_negative_samples: int,
     batch_size: int,
+    noise_power: float = 0.75,
+    minimum_noise_distribution: float = 1e-4,
+    subsampling_threshold: float = 1e-3,
+    minimum_subsampling_distribution: float = 1e-5,
     num_workers: int = SKIPGRAM_NUM_WORKERS,
 ) -> DataLoader:
     """
@@ -156,6 +175,10 @@ def get_dataloader(
         dataset_size (int, optional): Size of the dataset.
         num_negative_samples (int, optional): Number of negative samples to draw.
         batch_size (int, optional): Batch size.
+        noise_power (float, optional): The exponent used to shape the noise distribution. Defaults to 0.75.
+        minimum_noise_distribution (float, optional): The minimum distribution a noise block can have. Defaults to 1e-4.
+        subsampling_threshold (float, optional): The threshold used to subsample frequent words. Defaults to 1e-3.
+        minimum_subsampling_distribution (float, optional): The minimum distribution a subsampled block can have. Defaults to 1e-5.
         num_workers (int, optional): Number of workers. Defaults to SKIPGRAM_NUM_WORKERS.
 
     Returns:
@@ -171,6 +194,10 @@ def get_dataloader(
         dataset_size=dataset_size,
         num_negative_samples=num_negative_samples,
         unigram_distribution=uni_gram_distribution,
+        noise_power=noise_power,
+        minimum_noise_distribution=minimum_noise_distribution,
+        subsampling_threshold=subsampling_threshold,
+        minimum_subsampling_distribution=minimum_subsampling_distribution,
     )
 
     # Get dataloader

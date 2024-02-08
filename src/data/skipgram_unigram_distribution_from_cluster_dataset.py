@@ -21,7 +21,6 @@ from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
     CLUSTER_DATASET_PATH,
     SKIPGRAM_UNIGRAM_DISTRIBUTION_PATH,
-    SKIPGRAM_UNIGRAM_MIN_COUNT,
 )
 
 
@@ -168,9 +167,6 @@ if __name__ == "__main__":
                 cluster_file_path,
                 vocabulary_size,
             )
-
-    # Non-appearing blocks are given a minimum count
-    block_counts[block_counts == 0] = SKIPGRAM_UNIGRAM_MIN_COUNT
 
     # Get and save the unigram distribution
     unigram_distribution = block_counts / block_counts.sum()

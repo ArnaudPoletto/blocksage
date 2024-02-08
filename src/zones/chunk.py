@@ -1,9 +1,13 @@
 import numpy as np
 
+from src.utils.log import warn
 from src.zones.zone import Zone
 from src.zones.section import Section
-from src.config import SECTION_SIZE, N_SECTIONS_PER_CLUSTER_PER_DIM, MIN_Y
-from src.utils.log import warn
+from src.config import (
+    MIN_Y,
+    SECTION_SIZE,
+    N_SECTIONS_PER_CLUSTER_PER_DIM,
+)
 
 
 class Chunk(Zone):
@@ -11,14 +15,14 @@ class Chunk(Zone):
 
     SHAPE_SIZE = 4
 
-    def __init__(self, data: np.array, x_world: int = 0, z_world: int = 0) -> None:
+    def __init__(self, data: np.array, x_world: int, z_world: int) -> None:
         """
         Initialize a region.
 
         Args:
             data (np.ndarray): Array containing the block indices of shape (section, section_y, section_z, section_x).
-            x_world (int, optional): x coordinate of the region in the world. Defaults to 0.
-            z_world (int, optional): z coordinate of the region in the world. Defaults to 0.
+            x_world (int, optional): x coordinate of the region in the world.
+            z_world (int, optional): z coordinate of the region in the world.
 
         Raises:
             ValueError: If the data do not have the expected shape.

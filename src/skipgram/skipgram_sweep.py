@@ -32,17 +32,29 @@ def _sweep(config: Dict = None) -> None:
         # Get dataloader parameters from config
         num_negative_samples = config.num_negative_samples
         batch_size = config.batch_size
+        noise_power = config.noise_power
+        minimum_noise_distribution = config.minimum_noise_distribution
+        subsampling_threshold = config.subsampling_threshold
+        minimum_subsampling_distribution = config.minimum_subsampling_distribution
 
         # Get dataloaders
         train_dataloader = get_dataloader(
             dataset_size=SKIPGRAM_TRAIN_DATASET_SIZE,
             num_negative_samples=num_negative_samples,
             batch_size=batch_size,
+            noise_power=noise_power,
+            minimum_noise_distribution=minimum_noise_distribution,
+            subsampling_threshold=subsampling_threshold,
+            minimum_subsampling_distribution=minimum_subsampling_distribution,
         )
         val_dataloader = get_dataloader(
             dataset_size=SKIPGRAM_VAL_DATASET_SIZE,
             num_negative_samples=num_negative_samples,
             batch_size=batch_size,
+            noise_power=noise_power,
+            minimum_noise_distribution=minimum_noise_distribution,
+            subsampling_threshold=subsampling_threshold,
+            minimum_subsampling_distribution=minimum_subsampling_distribution,
         )
 
         # Get block id dictionary and vocabulary size

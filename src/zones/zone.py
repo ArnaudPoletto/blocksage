@@ -9,12 +9,13 @@ from src.utils.block_dictionary import (
     get_block_color_dictionary,
 )
 from src.config import (
-    CHUNK_XZ_SIZE,
-    SECTION_SIZE,
     AIR_NAME,
+    BLACK_COLOR,
+    SECTION_SIZE,
+    CHUNK_XZ_SIZE,
     CAVE_AIR_NAME,
     VOID_AIR_NAME,
-    BLACK_COLOR,
+    MASKED_BLOCK_ID,
 )
 
 
@@ -105,7 +106,7 @@ class Zone:
             (zone != air_block_id)
             & (zone != cave_air_block_id)
             & (zone != void_air_block_id)
-            & (zone != np.uint16(-1))
+            & (zone != MASKED_BLOCK_ID)
         )
         first_non_air_indices = np.argmax(non_air_mask[:, ::-1, :], axis=1)
         first_non_air_blocks = zone[:, ::-1, :][
@@ -137,22 +138,16 @@ class Zone:
 
     def display(
         self,
-        block_id_dict: Dict[str, int] = None,
-        block_color_dict: Dict[str, List[int]] = None,
+        block_id_dict: Dict[str, int],
+        block_color_dict: Dict[str, List[int]],
     ) -> None:
         """
         Display the region of blocks.
 
         Args:
-            block_id_dict (Dict[str, int], optional): Dictionary mapping block names to block ids. Defaults to None.
-            block_color_dict (Dict[str, List[int]], optional): Dictionary mapping block names to rgb values. Defaults to None.
+            block_id_dict (Dict[str, int]): Dictionary mapping block names to block ids.
+            block_color_dict (Dict[str, List[int]]): Dictionary mapping block names to rgb values.
         """
-        # Get dictionaries if not specified
-        if block_id_dict is None:
-            block_id_dict = get_block_id_dictionary()
-        if block_color_dict is None:
-            block_color_dict = get_block_color_dictionary()
-
         id_color_dict = {
             block_id: block_color_dict[block_name]
             for block_name, block_id in block_id_dict.items()

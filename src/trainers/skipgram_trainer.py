@@ -1,10 +1,10 @@
 import torch
 from torch import nn
+from typing import Tuple
 from typing import override
 from torch.optim import Optimizer
 from torch.cuda.amp import autocast
 
-from src.utils.log import warn
 from src.trainers.trainer import Trainer
 from src.models.skipgram import SkipGram
 from src.config import DEVICE
@@ -21,9 +21,10 @@ class SkipGramTrainer(Trainer):
         criterion: nn.Module,
         accumulation_steps: int,
         evaluation_steps: int,
-        print_statistics: bool = False,
-        use_scaler: bool = False,
-        name: str = "",
+        name: str,
+        use_scheduler: bool,
+        use_scaler: bool,
+        print_statistics: bool,
     ) -> None:
         """
         Initialize the trainer.
@@ -33,9 +34,10 @@ class SkipGramTrainer(Trainer):
             criterion (nn.Module): Loss function to use.
             accumulation_steps (int): Accumulation steps for gradient accumulation.
             evaluation_steps (int): Evaluation steps for evaluation.
-            print_statistics (bool, optional): Whether to print statistics during training. Defaults to False.
-            use_scaler (bool, optional): Whether to use scaler. Defaults to False.
-            name (str, optional): Name of the model. Defaults to the empty string.$
+            name (str, optional): Name of the model. Defaults to the empty string.
+            use_scheduler (bool, optional): Whether to use a learning rate scheduler.
+            use_scaler (bool, optional): Whether to use scaler.
+            print_statistics (bool, optional): Whether to print statistics during training.
 
         Raises:
             ValueError: If the model is not an instance of SkipGram.
@@ -48,9 +50,10 @@ class SkipGramTrainer(Trainer):
             criterion=criterion,
             accumulation_steps=accumulation_steps,
             evaluation_steps=evaluation_steps,
-            print_statistics=print_statistics,
-            use_scaler=use_scaler,
             name=name,
+            use_scheduler=use_scheduler,
+            use_scaler=use_scaler,
+            print_statistics=print_statistics,
         )
 
     @override
@@ -67,7 +70,7 @@ class SkipGramTrainer(Trainer):
 
         return name
 
-    def _forward_pass(self, batch: tuple) -> torch.Tensor:
+    def _forward_pass(self, batch: tuple) -> Tuple[torch.Tensor, None, None]:
         # Unpack batch
         target_block, positive_context_block, negative_context_blocks = batch
         target_block = target_block.to(DEVICE)

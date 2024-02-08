@@ -1,6 +1,6 @@
-import numpy as np
+# TODO: this is SkipGramSweeper, make a default parent class
+
 from typing import Any
-from torch.optim import AdamW
 from torch.utils.data import DataLoader
 
 from src.models.skipgram import SkipGram
@@ -27,8 +27,8 @@ class Sweeper:
         Initialize the Sweeper.
 
         Args:
-            model_class (str): The model class.
-            config (Any): The wandb config.
+            model_class (str): Model class.
+            config (Any): Wandb config.
 
         """
         self.model_class = model_class
@@ -44,8 +44,8 @@ class Sweeper:
         Train the model.
 
         Args:
-            train_loader (DataLoader): The train loader
-            val_loader (DataLoader): The validation loader
+            train_loader (DataLoader): Train loader.
+            val_loader (DataLoader): Validation loader.
         """
         # Get parameters from config
         embedding_dimension = self.config.embedding_dimension

@@ -11,7 +11,7 @@ import numpy as np
 from tqdm import tqdm
 from io import BytesIO
 from nbtlib import File
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from multiprocessing import Pool
 
 from src.zones.region import Region
@@ -59,13 +59,13 @@ def _process_section(data: np.ndarray, bit_length: int) -> np.ndarray:
     ]  # Flatten and trim to the correct size (last long may be incomplete)
 
 
-def _process_chunk(nbt_data: File, block_dict: dict) -> Tuple[int, int, int, int, np.ndarray]:
+def _process_chunk(nbt_data: File, block_id_dict: Dict[str, int]) -> Tuple[int, int, int, int, np.ndarray]:
     """
     Process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
     Args:
         nbt_data (File): NBT data of the chunk.
-        block_dict (dict): Dictionary of block states and their corresponding index.
+        block_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
 
     Returns:
         int: x coordinate of the chunk in the region.
@@ -111,7 +111,7 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> Tuple[int, int, int, int
             section_block_indices = _process_section(section_data, bit_length)
 
         # Convert block indices to block IDs
-        section_blocks = np.vectorize(lambda x: block_dict.get(x, -1))(
+        section_blocks = np.vectorize(lambda x: block_id_dict.get(x, -1))(
             section_palette[section_block_indices]
         )
 
@@ -138,13 +138,13 @@ def _process_chunk(nbt_data: File, block_dict: dict) -> Tuple[int, int, int, int
     )
 
 
-def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> Tuple[int, int, int, int, np.ndarray]:
+def _read_and_process_chunk(chunk_data_stream: BytesIO, block_id_dict: Dict[str, int]) -> Tuple[int, int, int, int, np.ndarray]:
     """
     Read and process a chunk of blocks, i.e. a section × section_y × section_z × section_x part of the world.
 
     Args:
         chunk_data_stream (BytesIO): Stream of the chunk data.
-        block_dict (dict): Dictionary of block states and their corresponding index.
+        block_id_dict (Dict[str, int]): Dictionary of block states and their corresponding index.
 
     Returns:
         int: x coordinate of the chunk in the region.
@@ -173,7 +173,7 @@ def _read_and_process_chunk(chunk_data_stream: BytesIO, block_dict: dict) -> Tup
     with decompressed_data_stream:
         nbt_data = File.parse(decompressed_data_stream)
 
-    return _process_chunk(nbt_data, block_dict)
+    return _process_chunk(nbt_data, block_id_dict)
 
 
 def _read_and_process_chunk_imap(args: Tuple[BytesIO, dict]) -> Tuple[int, int, int, int, np.ndarray]:
@@ -218,7 +218,7 @@ def _get_chunk_data_stream(locations: List[int], chunk_idx: int, region_data: by
 
 def get_region(
     file_path: str,
-    block_id_dict: dict = None,
+    block_id_dict: Dict[str, int],
     parallelize_chunks: bool = True,
     max_concurrent_processes: int = os.cpu_count(),
     show_bar: bool = True,
@@ -236,10 +236,6 @@ def get_region(
     Returns:
         Region: A region of blocks.
     """
-    # Get block id dictionary
-    if block_id_dict is None:
-        block_id_dict = get_block_id_dictionary()
-
     data = (
         np.zeros(
             (

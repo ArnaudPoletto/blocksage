@@ -7,10 +7,10 @@ from src.zones.section import Section
 from src.utils.block_dictionary import get_block_id_dictionary
 from src.config import (
     AIR_NAME,
-    SECTION_SIZE,
-    NATURAL_UNDERGROUND_BLOCK_NAMES,
-    N_SECTIONS_PER_CLUSTER_PER_DIM,
     CLUSTER_SIZE,
+    SECTION_SIZE,
+    MASKED_BLOCK_ID,
+    N_SECTIONS_PER_CLUSTER_PER_DIM,
 )
 
 
@@ -25,7 +25,6 @@ class Cluster(Zone):
         x_world: int = 0,
         y_world: int = 0,
         z_world: int = 0,
-        cluster_size: int = CLUSTER_SIZE,
     ) -> None:
         """
         Initialize a cluster.
@@ -35,36 +34,27 @@ class Cluster(Zone):
             x_world (int, optional): x coordinate of the cluster in the world. Defaults to 0.
             y_world (int, optional): y coordinate of the cluster in the world. Defaults to 0.
             z_world (int, optional): z coordinate of the cluster in the world. Defaults to 0.
-            cluster_size (int, optional): Number of sections per cluster per dimension. Defaults to CLUSTER_SIZE.
 
         Raises:
             ValueError: If the data do not have the expected shape.
-            ValueError: If the cluster size is out of bounds, or even.
         """
         if len(data.shape) != self.SHAPE_SIZE:
             raise ValueError(
                 f"❌ cluster_blocks must be of shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x), not {data.shape}."
             )
         if (
-            data.shape[0] != cluster_size
-            or data.shape[1] != cluster_size
-            or data.shape[2] != cluster_size
+            data.shape[0] != CLUSTER_SIZE
+            or data.shape[1] != CLUSTER_SIZE
+            or data.shape[2] != CLUSTER_SIZE
             or data.shape[3] != SECTION_SIZE
             or data.shape[4] != SECTION_SIZE
             or data.shape[5] != SECTION_SIZE
         ):
             warn(
-                f"The region data do not fit the expected shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x) = ({cluster_size}, {cluster_size}, {cluster_size}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
+                f"The region data do not fit the expected shape (cluster_x, cluster_y, cluster_z, section_y, section_z, section_x) = ({CLUSTER_SIZE}, {CLUSTER_SIZE}, {CLUSTER_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}, {SECTION_SIZE}), got {data.shape} instead."
             )
-        if cluster_size < 0 or cluster_size > N_SECTIONS_PER_CLUSTER_PER_DIM:
-            raise ValueError(
-                f"❌ cluster_size must be in [0, {N_SECTIONS_PER_CLUSTER_PER_DIM}], not {cluster_size}."
-            )
-        if cluster_size % 2 == 0:
-            raise ValueError(f"❌ cluster_size must be odd, not {cluster_size}.")
 
         super().__init__(data, x_world, y_world, z_world)
-        self.cluster_size = cluster_size
 
     def _get_data_for_display(self) -> np.ndarray:
         return self.get_data_by_cluster()
@@ -121,62 +111,40 @@ class Cluster(Zone):
             .transpose((0, 2, 1))
         )
 
-    def is_relevant(self, block_id_dict: Dict[str, int] = None) -> bool:
+    def is_relevant(
+            self, 
+            block_id_dict: Dict[str, int],
+            threshold_percent_air_blocks: float = 0.9
+            ) -> bool:
         """
         Check whether the cluster is relevant. A cluster is relevant if the following requirements are met:
         - There is no non-loaded section in the cluster.
-        # - The center section has at most 90% of non-air blocks. (REMOVED)
-        - The center section has at most 90% of air blocks.
-        # - The cluster has less than 70% of natural underground blocks. (REMOVED)
+        - The center section has at most 100*threshold_percent_air_blocks% of air blocks.
 
         Args:
-            block_id_dict (Dict[str, int], optional): Dictionary of block IDs. Defaults to None.
+            block_id_dict (Dict[str, int]): Dictionary of block IDs. Defaults to None.
+            threshold_percent_air_blocks (float, optional): Threshold percentage of air blocks in the center section. Defaults to 0.9.
 
         Returns:
             bool: Whether the cluster is relevant.
         """
-        if block_id_dict is None:
-            block_id_dict = get_block_id_dictionary()
-
         # No non-loaded section in the cluster
-        if np.any(self.data == np.uint16(-1)):
+        if np.any(self.data == MASKED_BLOCK_ID):
             return False
 
         # Non-air blocks percentage at most 90% in the center section
         center_section = self.get_section(
-            self.cluster_size // 2, self.cluster_size // 2, self.cluster_size // 2
+            CLUSTER_SIZE // 2, CLUSTER_SIZE // 2, CLUSTER_SIZE // 2
         )
         center_section_data = center_section.get_data_by_section()
         center_section_n_blocks = center_section_data.size
         air_id = block_id_dict[AIR_NAME]
         
-        # n_non_air_blocks = np.count_nonzero(center_section_data != air_id)
-        # percent_non_air_blocks = n_non_air_blocks / center_section_n_blocks
-
-        # if percent_non_air_blocks > 0.9:
-        #     return False
-
         # Air blocks percentage at most 90% in the center section
         n_air_blocks = np.count_nonzero(center_section_data == air_id)
         percent_air_blocks = n_air_blocks / center_section_n_blocks
 
-        if percent_air_blocks > 0.9:
+        if percent_air_blocks > threshold_percent_air_blocks:
             return False
-
-        # More than 70% of natural underground blocks in the cluster
-        # natural_underground_block_ids = [
-        #     block_id_dict[name]
-        #     for name in block_id_dict
-        #     if name in NATURAL_UNDERGROUND_BLOCK_NAMES
-        # ]
-        # n_natural_underground_blocks = np.count_nonzero(
-        #     np.isin(self.data, natural_underground_block_ids)
-        # )
-        # percent_natural_underground_blocks = (
-        #     n_natural_underground_blocks / self.data.size
-        # )
-
-        # if percent_natural_underground_blocks > 0.7:
-        #     return False
 
         return True

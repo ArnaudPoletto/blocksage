@@ -5,6 +5,7 @@ GLOBAL_DIR = Path(__file__).parent / ".."
 sys.path.append(str(GLOBAL_DIR))
 
 import torch
+import numpy as np
 
 # Production vs development
 PRODUCTION = False
@@ -46,30 +47,28 @@ SKIPGRAM_MODEL_PATH = f"{DATA_MODELS_PATH}skipgram.pt"
 
 # MCA file
 SECTION_SIZE = 16
-MIN_Y = -64
-MAX_Y = 320
+MIN_Y = -64 # Since 1.17
+MAX_Y = 320 # Since 1.17
 CHUNK_Y_SIZE = MAX_Y - MIN_Y
 CHUNK_XZ_SIZE = 16
-CLUSTER_SIZE = 3
-CLUSTER_STRIDE = 1
+CLUSTER_SIZE = 3  # Must greater than zero, odd, and smaller or equal than N_SECTIONS_PER_CLUSTER_PER_DIM
+CLUSTER_STRIDE = 3  # Set equal to CLUSTER_SIZE for non-overlapping in x z directions clusters is best
 N_SECTIONS_PER_CLUSTER_PER_DIM = CHUNK_Y_SIZE // SECTION_SIZE
 N_CHUNKS_PER_REGION_PER_DIM = 32
 
-# Dataset and dataloader
-NUM_WORKERS = 0
-
 # Skipgram
 SKIPGRAM_NAME = "skipgram"
-SKIPGRAM_WINDOW_SIZE = 2
+SKIPGRAM_WINDOW_SIZE = 1
 SKIPGRAM_TRAIN_DATASET_SIZE = 1_000_000
 SKIPGRAM_VAL_DATASET_SIZE = 10_000
 SKIPGRAM_NUM_WORKERS = 0
-SKIPGRAM_UNIGRAM_MIN_COUNT = 1
 
 # Color
 BLACK_COLOR = [0, 0, 0]
 
 # Block
+MASKED_BLOCK_ID = np.uint16(-1)
+
 AIR_NAME = "air"
 CAVE_AIR_NAME = "cave_air"
 VOID_AIR_NAME = "void_air"

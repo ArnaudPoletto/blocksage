@@ -112,16 +112,19 @@ def _process_cluster_file(
     cluster = Cluster(cluster_data)
     cluster_data = cluster.get_data_by_cluster()
 
-    # Get the center section as target blocks
-    center_section_idx = (section_size // 2) * cluster_size
+    # Get the inner section as target blocks
+    xz_start = skipgram_window_size
+    xz_end = cluster_size * section_size - skipgram_window_size
+    y_start = max(cluster_size // 2 * section_size, xz_start)
+    y_end = min((cluster_size // 2 + 1) * section_size, xz_end)
     target_blocks = cluster_data[
-        center_section_idx : center_section_idx + section_size,
-        center_section_idx : center_section_idx + section_size,
-        center_section_idx : center_section_idx + section_size,
+        xz_start:xz_end, 
+        y_start:y_end, 
+        xz_start:xz_end
     ]
 
     # Get the context blocks
-    # First, get the list of shifts to apply to the center section
+    # First, get the list of shifts to apply to the inner section
     shifts = np.array(
         np.meshgrid(
             *[np.arange(-skipgram_window_size, skipgram_window_size + 1)] * 3,
@@ -133,14 +136,16 @@ def _process_cluster_file(
     )  # Delete the shift [0, 0, 0]
 
     # Then, get the context blocks
+    xz_inner_section_size = target_blocks.shape[0]
+    y_inner_section_size = target_blocks.shape[1]
     context_blocks = np.zeros(
-        (len(shifts), section_size, section_size, section_size), dtype=np.uint16
+        (len(shifts), xz_inner_section_size, y_inner_section_size, xz_inner_section_size), dtype=np.uint16
     )
     for i, shift in enumerate(shifts):
         context_blocks[i] = np.roll(cluster_data, shift, axis=(0, 1, 2))[
-            center_section_idx : center_section_idx + section_size,
-            center_section_idx : center_section_idx + section_size,
-            center_section_idx : center_section_idx + section_size,
+            xz_start:xz_end, 
+            y_start:y_end, 
+            xz_start:xz_end
         ]
 
     # Then, get the number of cooccurrences between each target and context block
@@ -228,14 +233,9 @@ if __name__ == "__main__":
                 SKIPGRAM_WINDOW_SIZE,
             )
 
-    # Get the unigram distribution
-    unigram_distribution = np.load(SKIPGRAM_UNIGRAM_DISTRIBUTION_PATH)
-
     # Normalize the cooccurrence matrix
     coocurrence_matrix_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True) # Get the number of cooccurrences for each target block
-    zero_sum_indices = np.where(coocurrence_matrix_sum == 0)[0]
-    cooccurrence_matrix[zero_sum_indices] = unigram_distribution
-    coocurrence_matrix_sum = np.sum(cooccurrence_matrix, axis=1, keepdims=True)
+    coocurrence_matrix_sum = np.maximum(coocurrence_matrix_sum, 1) # Avoid division by zero
     cooccurrence_matrix /= coocurrence_matrix_sum
 
     # Save the cooccurrence matrix in a new file
